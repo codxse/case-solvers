@@ -1,0 +1,8 @@
+# Runtime artifacts emitted by the spec/solve skills
+.architect-plan.md
+.solve-progress.md
+.handoff.md
+
+# OS / editor cruft
+.DS_Store
+*.swp

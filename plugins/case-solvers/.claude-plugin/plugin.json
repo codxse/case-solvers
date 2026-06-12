@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "case-solvers",
+  "displayName": "Case Solvers",
+  "version": "0.1.0",
+  "description": "A two-phase coding workflow: /spec (planning model) defines the WHAT as a budget-solver contract; /solve (budget model) owns the HOW and executes it.",
+  "author": { "name": "nadiar", "email": "codex@nadiar.id" },
+  "homepage": "https://github.com/nadiar/case-solvers",
+  "repository": "https://github.com/nadiar/case-solvers",
+  "license": "MIT",
+  "keywords": ["workflow", "planning", "architect", "spec", "solve"]
+}

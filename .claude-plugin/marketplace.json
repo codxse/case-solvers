@@ -1,0 +1,17 @@
+{
+  "name": "case-solvers",
+  "description": "A two-phase coding workflow for Claude Code: /spec (planning model) writes a budget-solver contract that /solve (budget model) executes test-first.",
+  "owner": { "name": "nadiar", "email": "codex@nadiar.id" },
+  "plugins": [
+    {
+      "name": "case-solvers",
+      "source": "./plugins/case-solvers",
+      "description": "Spec/solve workflow: a planning-model architect (/spec) writes a budget-solver contract that a cheap solver model (/solve) executes test-first.",
+      "version": "0.1.0",
+      "author": { "name": "nadiar", "email": "codex@nadiar.id" },
+      "license": "MIT",
+      "category": "workflow",
+      "keywords": ["workflow", "planning", "architect", "spec", "solve"]
+    }
+  ]
+}
