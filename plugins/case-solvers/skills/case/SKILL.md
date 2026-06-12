@@ -1,7 +1,7 @@
 ---
 name: case
-description: 'Plan and author stories/epics into the bd backlog, refine a story, or show the board. Planning (frontier) model only.'
-version: 1.0.0
+description: 'Plan and author stories/epics into the bd backlog, refine a story, or show the board. Authoring needs a planning model; board/detail run on any tier.'
+version: 1.1.0
 argument-hint: '[<description>] [--id <story-id>]'
 disable-model-invocation: true
 user-invocable: true
@@ -24,13 +24,19 @@ Run as master architect on a **planning model**. You author the **WHAT** — req
 
 ---
 
-## Model Guard — Run First, All Modes
+## Model Guard — Authoring Modes Only
 
-Before anything else, confirm your model identity. `/case` is the master architect: it MUST run on a **planning model**. Judge your tier, not your name — the example names are illustrative, not exhaustive. Any frontier/high-parameter model qualifies → proceed.
+First determine your mode from the argument (see Trigger & Modes) — argument parsing is cheap and tier-independent.
 
-If you are a **cheap/fast-tier model** (or unsure), **STOP immediately**. Do not render, draft, decompose, or write to bd. Reply only:
+**Read-only modes run on any tier.** Board (`/case`, no argument) and Detail (`/case --id <id>`) only read bd and render; they author nothing. Run them on whatever model you are — budget or planning.
+
+**Authoring modes need a planning model.** Author (`/case <description>`), Decomposition, and Refine create or modify bd issues. They MUST run on a planning model. Judge your tier, not your name — the example names are illustrative, not exhaustive. Any frontier/high-parameter model qualifies → proceed.
+
+If an authoring mode is requested and you are a **cheap/fast-tier model** (or unsure), **STOP**. Do not draft, decompose, or write to bd. Reply only:
 
 > `/case` must run on a planning model. You're on `<model>`. Switch to one (e.g. via `/model`), then run `/case` again.
+
+A `--id` whose story carries `needs-refinement` would enter Refine (an authoring mode). On a budget model, render the read-only detail first, then — instead of refining — emit the message above and make no change to the story.
 
 ---
 
