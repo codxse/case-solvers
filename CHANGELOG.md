@@ -9,6 +9,12 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+### Changed
+- `/case` (`1.0.0` → `1.1.0`) — read-only modes now run on **any model tier**: Board (`/case`)
+  and Detail (`/case --id`) render without requiring a planning model. Authoring (author,
+  decompose, refine) still requires one; a budget `--id` on a `needs-refinement` story renders
+  the detail, then stops short of refining.
+
 ## [1.0.0] - 2026-06-13
 
 Breaking: the `case-solvers` plugin (`0.3.0` → `1.0.0`) is re-architected around **bd
