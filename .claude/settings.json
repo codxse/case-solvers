@@ -3,6 +3,35 @@
     "Bash(bd *)",
     "Bash(code *)"
   ],
+  "permissions": {
+    "allow": [
+      "Bash(cat *)",
+      "Bash(ls)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(file *)",
+      "Bash(stat *)",
+      "Bash(pwd)",
+      "Bash(echo *)",
+      "Bash(which *)",
+      "Bash(type *)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git status*)",
+      "Bash(git show*)",
+      "Bash(git branch*)",
+      "Bash(bd show*)",
+      "Bash(bd list*)",
+      "Bash(bd ready*)",
+      "Bash(bd blocked*)",
+      "Bash(bd stats*)",
+      "Read"
+    ]
+  },
   "hooks": {
     "PreCompact": [
       {
