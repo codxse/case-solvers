@@ -1,6 +1,6 @@
 ---
 name: solve
-description: 'This skill should be used when the user asks to "solve the problem", "execute the plan", "implement the solution", "run the plan", or "start solving". Use only after /spec has produced .architect-plan.md. Expected to run on a budget model (Haiku, Gemini Flash, or MiniMax-M3 via the `minimax` wrapper) but runs on any model — only warns (never blocks) if run on a planning model. Owns the HOW, pre-flights each slice before any code (too abstract / too big / ungrounded names → writes .handoff.md Type: pre-flight and STOPS without coding), executes one milestone per pass with test-first per slice, pauses for human verification on human/both slices, tracks progress in .solve-progress.md, and on rejection writes .handoff.md and STOPS for /spec (Opus/Sonnet/Gemini Pro) to refine the contract.'
+description: 'This skill should be used when the user asks to "solve the problem", "execute the plan", "implement the solution", "run the plan", or "start solving". Use only after /case has produced .case.md. Expected to run on a budget model (Haiku, Gemini Flash, or MiniMax-M3 via the `minimax` wrapper) but runs on any model — only warns (never blocks) if run on a planning model. Owns the HOW, pre-flights each slice before any code (too abstract / too big / ungrounded names → writes .handoff.md Type: pre-flight and STOPS without coding), executes one milestone per pass with test-first per slice, pauses for human verification on human/both slices, tracks progress in .solve-progress.md, and on rejection writes .handoff.md and STOPS for /case (Opus/Sonnet/Gemini Pro) to refine the contract.'
 version: 0.11.0
 disable-model-invocation: false
 user-invocable: true
@@ -8,11 +8,11 @@ user-invocable: true
 
 # Solve Skill
 
-Run as a budget-conscious solver. Read the problem definition in `.architect-plan.md` (the **WHAT**) and do the **HOW** yourself — exploration, mechanism choice, code. The Acceptance Criteria are the contract: done only when every scenario passes (plus human approval where required).
+Run as a budget-conscious solver. Read the problem definition in `.case.md` (the **WHAT**) and do the **HOW** yourself — exploration, mechanism choice, code. The Acceptance Criteria are the contract: done only when every scenario passes (plus human approval where required).
 
 **Model tiers** (know your own from your system prompt):
-- **Planning model** — **Opus, Sonnet, or Gemini Pro**. Expensive for solving; the architect (`/spec`).
-- **Budget model** — **anything else**. The tier `/solve` is designed for, and that `/spec` sizes the contract for.
+- **Planning model** — **Opus, Sonnet, or Gemini Pro**. Expensive for solving; the architect (`/case`).
+- **Budget model** — **anything else**. The tier `/solve` is designed for, and that `/case` sizes the contract for.
 
 ## Cost Guard — Run First
 
@@ -26,20 +26,20 @@ Confirm your own model identity. `/solve` is designed for a **budget model** but
 
 ## Division of Labor
 
-- The architect (`/spec`, a planning model) defined WHAT: Problem Statement, Constraints, Acceptance Criteria, Milestones, Out of Scope.
+- The architect (`/case`, a planning model) defined WHAT: Problem Statement, Constraints, Acceptance Criteria, Milestones, Out of Scope.
 - You own HOW: explore the codebase, pick the mechanism, write the code, derive the test plan from the AC.
 
 ## File Protocol — What You May Touch
 
-- **`.architect-plan.md`** — read only. **Never edit it.** It belongs to `/spec`.
+- **`.case.md`** — read only. **Never edit it.** It belongs to `/case`.
 - **`.solve-progress.md`** — you own it. Milestone status ledger so a later pass resumes correctly.
-- **`.handoff.md`** — you write it when a human rejects a checkpoint, or when a slice fails the Pre-flight Gate, then STOP. `/spec` consumes and removes it.
+- **`.handoff.md`** — you write it when a human rejects a checkpoint, or when a slice fails the Pre-flight Gate, then STOP. `/case` consumes and removes it.
 
 Refining the contract is the architect's job. Your only writes are progress and handoff.
 
 ## Two Sources of Truth — Nothing Else
 
-Only two things are real: **`.architect-plan.md`** and **the actual codebase**. If a fact is in neither, it does not exist — do not invent it.
+Only two things are real: **`.case.md`** and **the actual codebase**. If a fact is in neither, it does not exist — do not invent it.
 
 - Don't assume a file, function, field, endpoint, or library exists. Verify by reading the code first.
 - Don't add requirements, behaviors, or scope the AC don't state.
@@ -49,7 +49,7 @@ Only two things are real: **`.architect-plan.md`** and **the actual codebase**. 
 
 ## Contract Outranks This Skill
 
-`.architect-plan.md` is authoritative. Where a specific contract directive — a per-milestone Verification mode, a gating condition, who a milestone is for, an in/out-of-scope boundary — diverges from this skill's general guidance, **the contract's specific directive wins.** Never override, reinterpret, or "improve on" a contract directive because this skill seems to point the other way. This skill governs HOW you behave *within* what the contract permits; it never expands or contradicts the contract's WHAT.
+`.case.md` is authoritative. Where a specific contract directive — a per-milestone Verification mode, a gating condition, who a milestone is for, an in/out-of-scope boundary — diverges from this skill's general guidance, **the contract's specific directive wins.** Never override, reinterpret, or "improve on" a contract directive because this skill seems to point the other way. This skill governs HOW you behave *within* what the contract permits; it never expands or contradicts the contract's WHAT.
 
 - **A contract role or gating assignment binds you even when you could technically do the work.** If the contract assigns the current slice elsewhere (e.g. "for a planning model + human, not the budget solver") or gates it behind another milestone, honor it — proceed only where the contract allows, otherwise stop per its instructions. Verifying a capability (see Two Sources of Truth) only cures a false "I can't"; it never licenses doing what the contract says is not yours to do.
 - **A contract directive that is genuinely impossible or self-inconsistent is a Stop-on-Ambiguity stop** — surface it as Needs Clarification; don't silently resolve the conflict against the contract.
@@ -67,7 +67,7 @@ Stop triggers:
 - An `auto` AC can only be made to pass by mocking the exact boundary it asserts (the real path can't be exercised here) — it needs a `human`/`both` device/integration check, not an auto pass.
 - The captured failure implicates an area the contract marks Out of Scope — surface it, don't quietly work around the fence (handoff if at a checkpoint, else Needs Clarification).
 
-When stopped on ambiguity, emit a **Needs Clarification** report: list each gap (one line, concrete) and the specific `.architect-plan.md` improvement that resolves it. Ask the user; where a discrete choice resolves it, use AskUserQuestion. Then stop — the user patches the contract via `/spec` and re-runs `/solve`.
+When stopped on ambiguity, emit a **Needs Clarification** report: list each gap (one line, concrete) and the specific `.case.md` improvement that resolves it. Ask the user; where a discrete choice resolves it, use AskUserQuestion. Then stop — the user patches the contract via `/case` and re-runs `/solve`.
 
 **Loop guard:** distinguish a *fixable failure* from a *blocking ambiguity*. A failing test you understand → keep fixing. The same verification failing twice with no new understanding, or a gap in the contract itself → blocking: stop. Never burn iterations guessing.
 
@@ -85,7 +85,7 @@ Before touching any code on a slice, prove the slice is followable. This is your
 All four pass → proceed to execute; the sketches from step 3 become your test plan. Any check fails → do **not** start coding and do **not** guess:
 
 - A single discrete question would resolve it → ask inline (Needs Clarification / AskUserQuestion) and wait.
-- Structural problem — too abstract, too big, unsettled design decision, multiple gaps — → write `.handoff.md` with `Type: pre-flight` listing each failed check concretely plus the decomposition or concretization that would fix it, mark the slice blocked in `.solve-progress.md`, and STOP. Decomposition is architect work; `/spec` consumes the handoff.
+- Structural problem — too abstract, too big, unsettled design decision, multiple gaps — → write `.handoff.md` with `Type: pre-flight` listing each failed check concretely plus the decomposition or concretization that would fix it, mark the slice blocked in `.solve-progress.md`, and STOP. Decomposition is architect work; `/case` consumes the handoff.
 
 ## Working Principles (Karpathy)
 
@@ -135,10 +135,10 @@ The contract states a `Verification` mode — `auto | human | both`. In mileston
 (Cost Guard first — warn if on a planning model, then continue.)
 
 ### 1. Validate & determine mode
-- `.architect-plan.md` missing → stop:
+- `.case.md` missing → stop:
   ```
-  Error: .architect-plan.md not found in current directory.
-  Run /spec first to define the problem.
+  Error: .case.md not found in current directory.
+  Run /case first to define the problem.
   ```
 - Read it. Has a `## Milestones` section → **milestone mode**. Otherwise → **single-pass mode** (whole contract = one slice).
 - Read `.solve-progress.md` if present → resume at the first not-done milestone. Absent + milestone mode → create it, all milestones pending.
@@ -178,7 +178,7 @@ Repeat steps 3–6 until every milestone is done. Then final report.
 ```markdown
 # Solve Progress
 
-Contract: .architect-plan.md
+Contract: .case.md
 Updated: [timestamp]
 
 - [x] Milestone 1 — <capability>   (done, human-approved)
@@ -194,7 +194,7 @@ Two variants — state which in the `Type:` line. Both mean STOP after writing.
 # Handoff — Human Feedback
 
 Type: human-rejection
-Contract: .architect-plan.md
+Contract: .case.md
 Milestone: <N — capability>   (Verification: human|both)
 
 ## What was built
@@ -207,7 +207,7 @@ Milestone: <N — capability>   (Verification: human|both)
 [the human's words — what's wrong / what was expected]
 
 ## Suggested contract change
-[what in .architect-plan.md likely needs to change — AC / Constraint / Milestone. /spec decides.]
+[what in .case.md likely needs to change — AC / Constraint / Milestone. /case decides.]
 
 ## Progress at handoff
 - Done: [milestones]
@@ -219,14 +219,14 @@ Milestone: <N — capability>   (Verification: human|both)
 # Handoff — Pre-flight Feedback
 
 Type: pre-flight
-Contract: .architect-plan.md
+Contract: .case.md
 Milestone: <N — capability>   (or: single-pass)
 
 ## Failed checks
 [One line per failed check, concrete: which named artifact was NOT FOUND (and what was searched), which AC forces which design decision, why the slice exceeds one pass (the file list / subsystems involved). Facts, not complaints.]
 
 ## Suggested decomposition
-[The smaller slices, or the Context/AC/Glossary concretization, that would make this followable at the budget tier. /spec decides.]
+[The smaller slices, or the Context/AC/Glossary concretization, that would make this followable at the budget tier. /case decides.]
 
 ## Progress at handoff
 - Done: [milestones]
@@ -235,10 +235,10 @@ Milestone: <N — capability>   (or: single-pass)
 
 On writing a `human-rejection` handoff, tell the user:
 > Milestone `<N>` rejected. Wrote `.handoff.md`, stopped here.
-> 1. `/clear`, switch to a planning model, run `/spec` → it refines `.architect-plan.md` from the handoff.
+> 1. `/clear`, switch to a planning model, run `/case` → it refines `.case.md` from the handoff.
 > 2. `/clear`, switch to a budget model, run `/solve` → resumes the remaining milestones.
 
 On writing a `pre-flight` handoff, tell the user:
 > Slice `<N>` failed pre-flight (<one-line reason>). No code was touched. Wrote `.handoff.md`.
-> 1. `/clear`, switch to a planning model, run `/spec` → it decomposes/concretizes the contract from the handoff.
+> 1. `/clear`, switch to a planning model, run `/case` → it decomposes/concretizes the contract from the handoff.
 > 2. `/clear`, switch back to a budget model, run `/solve` → starts on the refined slices.
