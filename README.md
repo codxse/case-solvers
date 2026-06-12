@@ -35,16 +35,47 @@ beads` (or `npm i -g @beads/bd`, or `go install github.com/steveyegge/beads@late
 skills assume it's present (they no longer check) and run `bd init` in your project on first
 use.
 
-To skip permission prompts for `bd` in your project, add it to `allowedTools` in
-`.claude/settings.json`:
+To skip permission prompts, add this to `.claude/settings.json` in your project:
 
 ```json
 {
   "allowedTools": [
-    "Bash(bd *)"
-  ]
+    "Bash(bd *)",
+    "Bash(code *)"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(cat *)",
+      "Bash(ls)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(file *)",
+      "Bash(stat *)",
+      "Bash(pwd)",
+      "Bash(echo *)",
+      "Bash(which *)",
+      "Bash(type *)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git status*)",
+      "Bash(git show*)",
+      "Bash(git branch*)",
+      "Bash(bd show*)",
+      "Bash(bd list*)",
+      "Bash(bd ready*)",
+      "Bash(bd blocked*)",
+      "Bash(bd stats*)",
+      "Read"
+    ]
+  }
 }
 ```
+
+`allowedTools` covers `bd` and `code` commands. `permissions.allow` silently allows all read-only shell operations (file inspection, grep, git reads, bd queries) and the `Read` tool so `/case` and `/solve` never prompt for codebase exploration.
 
 ### The three commands
 
