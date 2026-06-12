@@ -99,7 +99,7 @@ Drafting rules (both modes): inference-first; if the user names a concrete artif
 `.case.md` is the transient staging file — created for the authoring loop, deleted when the contract is committed to bd. Both story and epic modes use it.
 
 1. **Overwrite guard.** If `.case.md` already exists, ask the user to confirm overwrite before writing anything. If the user declines, stop — do not modify the file and do not continue authoring.
-2. **Write the draft.** Write the full contract (or decomposition doc) to `.case.md`. Report that the file was created; do not print the contract inline.
+2. **Write the draft.** Write the full contract (or decomposition doc) to `.case.md` **in the project root** — the `primary working directory` shown in your environment (e.g. `/home/nadiar/Workspace/case-solvers/.case.md`). If the current session is inside a worktree, resolve the main checkout path and write there; never write inside a worktree subdirectory. Report that the file was created; do not print the contract inline.
 3. **Feedback loop.** When the user describes a change or asks for an improvement in conversation, read the current `.case.md`, apply the change, and rewrite the file. Do not print the full contract inline.
 4. **Commit on confirm.** When the user confirms ("go ahead", "looks good", or equivalent):
    - **Story:** read `.case.md`, create the bd issue with that exact content as the body (`bd create "<title>" -t story`), delete `.case.md`, report the new id.
