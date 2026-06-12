@@ -55,18 +55,24 @@ Invoked as `/case [<description>] [--id <story-id>]`. After both guards, dispatc
 
 ## Board Mode (`/case` with no argument)
 
-Render the user's work as a status board — never raw `bd` output. Pull data with `bd list --json`, `bd ready --json`, `bd blocked` and group by state:
+Render the user's work as a status board — never raw `bd` output. Pull data with `bd list --json`, `bd ready --json`, `bd blocked` and render as a Markdown table:
 
 ```
-READY TO SOLVE          IN PROGRESS          ✅ DONE · review & merge        BLOCKED
- #12 <title>             #8 <title>            #5 <title>  → branch bd/5        #14 <title>
- #19 <title>                (branch bd/8)      #9 <title>  → branch bd/9          ↳ waits #5
+| # | Title | Status | Notes |
+|---|---|---|---|
+| 12 | <title> | READY | |
+| 19 | <title> | READY | |
+| 8 | <title> | IN PROGRESS | |
+| 5 | <title> | ✅ DONE | bd/5 |
+| 9 | <title> | ✅ DONE | bd/9 |
+| 14 | <title> | BLOCKED | waits #5 |
 
 Epic "<name>": 3/7 done · 2 in-progress · 1 review · 1 blocked
 ```
 
-- **READY** = `bd ready` (no open blockers). **IN PROGRESS** = claimed/`in_progress`. **DONE · review & merge** = label `needs-review`, show the branch `bd/<id>`. **BLOCKED** = has open blockers; show what it waits on.
-- For each epic, one rollup line: `done/total` plus a breakdown.
+- **READY** = `bd ready` (no open blockers). **IN PROGRESS** = claimed/`in_progress`. **✅ DONE** = label `needs-review`; Notes shows the branch `bd/<id>`. **BLOCKED** = has open blockers; Notes shows `waits #<blocker-id>`.
+- If the board is empty, emit the table header row and a single body row: `| | (no stories yet) | | |`.
+- For each epic, one rollup line below the table: `done/total` plus a breakdown.
 - Close with the two next actions: `/solve <id>` to work a READY story, `/evaluate <id>` to review a DONE one.
 
 ---
