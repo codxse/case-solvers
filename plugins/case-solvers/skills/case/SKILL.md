@@ -224,9 +224,9 @@ Each story's bd body uses this template. Mandatory sections depend on problem ty
 
 ## Acceptance Criteria
 
-Scenario: [title]
-  Given [initial condition — specific value, observable state]
-  When [action — callable method, triggerable event]
+Scenario: [title]  
+  Given [initial condition — specific value, observable state]  
+  When [action — callable method, triggerable event]  
   Then [result — observable state, response field, side effect]
 
 [Add scenarios for important edge cases. Each programmatically verifiable.]
