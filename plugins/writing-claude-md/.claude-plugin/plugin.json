@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "writing-claude-md",
+  "displayName": "Writing CLAUDE.md",
+  "version": "1.0.0",
+  "description": "Skill for creating and updating CLAUDE.md and other LLM project context files. Teaches what to include, what to omit, and how to keep context lean.",
+  "author": { "name": "nadiar", "email": "codex@nadiar.id" },
+  "homepage": "https://github.com/codxse/case-solvers",
+  "repository": "https://github.com/codxse/case-solvers",
+  "license": "MIT",
+  "keywords": ["claude-md", "context", "documentation", "llm", "agents-md"]
+}

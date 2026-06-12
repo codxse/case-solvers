@@ -1,6 +1,6 @@
 {
   "name": "case-solvers",
-  "description": "A two-phase coding workflow for Claude Code: /case (planning model) writes a budget-solver contract that /solve (budget model) executes test-first.",
+  "description": "Claude Code plugins by nadiar: workflow skills (/case, /solve) and context-writing helpers.",
   "owner": { "name": "nadiar", "email": "codex@nadiar.id" },
   "plugins": [
     {
@@ -12,6 +12,16 @@
       "license": "MIT",
       "category": "workflow",
       "keywords": ["workflow", "planning", "architect", "case", "solve"]
+    },
+    {
+      "name": "writing-claude-md",
+      "source": "./plugins/writing-claude-md",
+      "description": "Skill for creating and updating CLAUDE.md and other LLM project context files. Teaches what to include, what to omit, and how to keep context lean.",
+      "version": "1.0.0",
+      "author": { "name": "nadiar", "email": "codex@nadiar.id" },
+      "license": "MIT",
+      "category": "documentation",
+      "keywords": ["claude-md", "context", "documentation", "llm", "agents-md"]
     }
   ]
 }
