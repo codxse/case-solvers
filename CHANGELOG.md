@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the **case-solvers** plugin are documented here.
+All notable changes to the **case-solvers** marketplace are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -8,6 +8,16 @@ Versions track the published plugin/marketplace, not the skills' internal frontm
 versions (shown in parentheses where relevant).
 
 ## [Unreleased]
+
+## [0.4.0] - 2026-06-12
+
+### Added
+- New plugin `writing-claude-md` (`v1.0.0`): skill for writing lean, high-signal
+  `CLAUDE.md` and `AGENTS.md` files — includes only what can't be derived from code.
+  Install: `/plugin install writing-claude-md@case-solvers`.
+- Updated marketplace description to reflect multi-plugin scope.
+- Expanded README: plugin table, per-plugin install instructions, `writing-claude-md`
+  usage section.
 
 ## [0.3.0] - 2026-06-12
 
@@ -60,7 +70,8 @@ publishable Claude Code plugin marketplace.
   `claude plugin validate --strict`. The original values contained `: ` (colon-space)
   sequences that broke plain-scalar parsing and silently dropped the metadata.
 
-[Unreleased]: https://github.com/codxse/case-solvers/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/codxse/case-solvers/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/codxse/case-solvers/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/codxse/case-solvers/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/codxse/case-solvers/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/codxse/case-solvers/releases/tag/v0.1.0
