@@ -1,7 +1,7 @@
 ---
 name: case
-description: 'This skill should be used when the user asks to "plan a solution", "define a problem", "create a plan", "architect a solution", "let me plan this", or describes a coding task they want defined precisely before solving. Runs on a planning model (Opus/Sonnet/Gemini Pro) as master architect — refuses to run on a budget model. Produces .case.md — a problem definition (the WHAT) that a cheaper solver model (/solve) consumes to do the HOW. If the scope is too large for a budget solver, the skill stops and asks the user to decompose or rescope. Also runs in refine-from-handoff mode: when .handoff.md exists (human rejection or solver pre-flight feedback), it improves .case.md accordingly (planning models only).'
-version: 0.9.0
+description: 'This skill should be used when the user asks to "plan a solution", "define a problem", "create a plan", "architect a solution", "let me plan this", or describes a coding task they want defined precisely before solving. Runs on a planning model (any frontier model, e.g. Opus/Sonnet/Fable/Mythos/Gemini Pro) as master architect — refuses to run on a budget model. Produces .case.md — a problem definition (the WHAT) that a cheaper solver model (/solve) consumes to do the HOW. If the scope is too large for a budget solver, the skill stops and asks the user to decompose or rescope. Also runs in refine-from-handoff mode: when .handoff.md exists (human rejection or solver pre-flight feedback), it improves .case.md accordingly (planning models only).'
+version: 0.10.0
 argument-hint: <problem-description>
 disable-model-invocation: false
 user-invocable: true
@@ -12,8 +12,8 @@ user-invocable: true
 Run as master architect on a **planning model**. Output `.case.md` in the current working directory — a problem definition consumed by a cheaper solver (`/solve`) running on a **budget model**.
 
 **Model tiers** (know your own from your system prompt):
-- **Planning model** — Opus, Sonnet, or Gemini Pro. Capable; the architect (`/case`).
-- **Budget model** — Haiku, MiniMax-M3, or Gemini Flash. Cheap; the solver (`/solve`).
+- **Planning model** — any frontier-tier, high-parameter model (e.g. Opus, Sonnet, Fable, Mythos, Gemini Pro). Capable; the architect (`/case`).
+- **Budget model** — any cheap/fast, low-parameter tier (e.g. Haiku, MiniMax-M3, Gemini Flash). Cheap; the solver (`/solve`).
 
 **Principle**: `.case.md` defines **WHAT** (requirement, boundary, contract). The solver handles **HOW** (mechanism, code, exploration).
 
@@ -29,9 +29,9 @@ Run as master architect on a **planning model**. Output `.case.md` in the curren
 
 ## Model Guard — Run First, All Modes
 
-Before anything else (both fresh-define and refine-from-handoff), confirm your own model identity. `/case` is the master architect: it MUST run on a **planning model**.
+Before anything else (both fresh-define and refine-from-handoff), confirm your own model identity. `/case` is the master architect: it MUST run on a **planning model**. Judge your tier, not your name — the example names are illustrative, not exhaustive. Any frontier/high-parameter model qualifies → proceed.
 
-If you are a **budget model** (or anything that isn't a planning model), **STOP immediately**. Do not classify, draft, grill, read `.handoff.md`, or write any file. Reply only:
+If you are a **cheap/fast-tier model** (or unsure of your tier), **STOP immediately**. Do not classify, draft, grill, read `.handoff.md`, or write any file. Reply only:
 
 > `/case` must run on a planning model. You're on `<model>`. Switch to one of those (e.g. via `/model`), then run `/case` again.
 
@@ -43,7 +43,7 @@ Only when you are on a planning model, proceed past this guard.
 
 Invoked with `/case [description]`.
 
-- **Model Guard first** — confirm you are on a planning model (see Model Guard). Not a planning model → refuse and stop.
+- **Model Guard first** (see Model Guard).
 - **If `.handoff.md` exists** → enter Refine-from-Handoff Mode (see that section), skip the fresh-define workflow.
 - If `description` is empty, ask one question: "What do you want to solve?".
 - Otherwise infer from the user description, and grill on scope-affecting unknowns one at a time (see Workflow).
@@ -54,7 +54,7 @@ Invoked with `/case [description]`.
 
 When invoked:
 
-0. **Model Guard.** Confirm you are on a planning model (see Model Guard). If not → refuse and stop here; do nothing else.
+0. **Model Guard** (see Model Guard); fail → stop here.
 1. **Parse args.** If empty, ask: "What do you want to solve?".
 2. **Classify problem type.** See Problem Types. If ambiguous between 2 types, pick the more specific — don't ask.
 3. **Draft all sections.** Inference-first from the user description. If the user names a concrete artifact (service/class/file), targeted exploration allowed: Read the file + Grep the artifact name, budget max 3 Read + 2 Grep, to surface relevant method/attribute/caller so Context and AC can be concrete. Without an artifact hint, skip exploration — let the solver explore. The budget applies to *discovery* only; verifying artifacts the draft ends up naming is mandatory and unbudgeted (see Grounded names).
@@ -174,12 +174,6 @@ Steps:
 
 ---
 
-## What NOT to Include
-
-The Pre-write guard (Workflow step 6) is the canonical list of what to strip: implementation code, file:line edits, prescribed names for new artifacts, sections outside the template (Solution Specification, Definition of Done…), mechanism narrative in the Problem Statement, and AC that merge independent assertions. The throughline: if you're tempted to write any of these, you're writing a *plan*, not a *problem* — stop and return to contract/outcome.
-
----
-
 ## Output Format
 
 Write `.case.md` with the template below. Mandatory sections depend on problem type.
@@ -242,44 +236,25 @@ Verification: [auto | human | both]
 
 ---
 
-## Filled Example (Bugfix)
+## Example Fragment (Bugfix)
 
-Note: no code block, no file:line edit, no prescribed mechanism, no section outside the template.
+The judgment parts only — the Output Format above shows the full scaffold. Note: no code, no file:line, no mechanism.
 
 ````markdown
-# Bug: Engagement Campaign Doesn't Expire After end_at Passes
-
-## Problem Statement
-An engagement campaign whose `end_at` has passed still returns as `active` from `GET /api/shopping_pages`. Expected: a campaign past its `end_at` must not appear in active campaign results.
-
-## Context
-`EngagementCampaign` has `start_at` and `end_at` columns (timestamp). The bug appeared after the `end_at` column was added but the active scope query wasn't updated.
-
 ## Constraints
 - Don't change the signature of scope `active` (used by 3 other callers).
-- Don't add a new migration index.
-
-## Acceptance Criteria
 
 Scenario: Expired campaign not in active
-  Given an EngagementCampaign with start_at 1 day ago, end_at 1 hour ago
+  Given an EngagementCampaign with end_at 1 hour ago
   When calling `EngagementCampaign.active`
   Then that campaign is not in the result
 
 Scenario: Non-expired campaign stays in active
-  Given an EngagementCampaign with start_at 1 day ago, end_at 1 day from now
+  Given an EngagementCampaign with end_at 1 day from now
   When calling `EngagementCampaign.active`
   Then that campaign is in the result
 
-## Verification
-Verification: auto   — scope behavior is asserted by a unit test on `EngagementCampaign.active`; no human checkpoint needed.
-
-## Out of Scope
-- Don't refactor `shopping_pages_controller`.
-- Don't change the serializer response.
-
-## Files of Interest
-- `app/models/engagement_campaign.rb` — model with scope `active`.
+Verification: auto — asserted by a unit test on `EngagementCampaign.active`.
 ````
 
 ---

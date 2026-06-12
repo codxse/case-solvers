@@ -9,6 +9,19 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-12
+
+### Changed
+- Model tiers are now capability-defined instead of a closed name list: a planning model
+  is "any frontier-tier, high-parameter model" (Opus/Sonnet/Fable/Mythos/Gemini Pro as
+  illustrative examples). Fixes frontier models outside the old list (e.g. Fable) refusing
+  to run `/case` and missing the `/solve` cost warning.
+- Compressed the `/case` worked example (39 lines) to a micro-fragment showing only the
+  judgment parts: positive+regression AC pair, boundary-style constraint, verification line.
+- Removed the redundant "What NOT to Include" section (duplicate of the Pre-write guard)
+  and slimmed repeated Model Guard restatements to one-line pointers.
+- Internal skill versions: case `0.9.0` → `0.10.0`, solve `0.11.0` → `0.12.0`.
+
 ## [0.2.0] - 2026-06-12
 
 Breaking: the architect command and its output file were renamed. Existing installs
@@ -47,6 +60,7 @@ publishable Claude Code plugin marketplace.
   `claude plugin validate --strict`. The original values contained `: ` (colon-space)
   sequences that broke plain-scalar parsing and silently dropped the metadata.
 
-[Unreleased]: https://github.com/nadiar/case-solvers/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/nadiar/case-solvers/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/nadiar/case-solvers/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nadiar/case-solvers/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nadiar/case-solvers/releases/tag/v0.1.0

@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "case-solvers",
   "displayName": "Case Solvers",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A two-phase coding workflow: /case (planning model) defines the WHAT as a budget-solver contract; /solve (budget model) owns the HOW and executes it.",
   "author": { "name": "nadiar", "email": "codex@nadiar.id" },
   "homepage": "https://github.com/nadiar/case-solvers",

@@ -7,7 +7,7 @@
       "name": "case-solvers",
       "source": "./plugins/case-solvers",
       "description": "Case/solve workflow: a planning-model architect (/case) writes a budget-solver contract that a cheap solver model (/solve) executes test-first.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "author": { "name": "nadiar", "email": "codex@nadiar.id" },
       "license": "MIT",
       "category": "workflow",

@@ -4,7 +4,7 @@ A two-phase coding workflow for Claude Code, packaged as a plugin. A capable
 **planning model** acts as the architect and defines *what* to build; a cheap
 **budget model** acts as the solver and does *how* to build it.
 
-- **`/case`** — runs on a planning model (Opus / Sonnet / Gemini Pro). Defines the
+- **`/case`** — runs on a planning model — any frontier model (e.g. Opus / Sonnet / Fable / Mythos / Gemini Pro). Defines the
   problem precisely and writes `.case.md`: the requirement, boundaries, and
   acceptance criteria. It refuses to run on a budget model, and stops to rescope if the
   problem is too large for a budget solver to finish in one pass.

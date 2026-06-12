@@ -1,7 +1,7 @@
 ---
 name: solve
-description: 'This skill should be used when the user asks to "solve the problem", "execute the plan", "implement the solution", "run the plan", or "start solving". Use only after /case has produced .case.md. Expected to run on a budget model (Haiku, Gemini Flash, or MiniMax-M3 via the `minimax` wrapper) but runs on any model — only warns (never blocks) if run on a planning model. Owns the HOW, pre-flights each slice before any code (too abstract / too big / ungrounded names → writes .handoff.md Type: pre-flight and STOPS without coding), executes one milestone per pass with test-first per slice, pauses for human verification on human/both slices, tracks progress in .solve-progress.md, and on rejection writes .handoff.md and STOPS for /case (Opus/Sonnet/Gemini Pro) to refine the contract.'
-version: 0.11.0
+description: 'This skill should be used when the user asks to "solve the problem", "execute the plan", "implement the solution", "run the plan", or "start solving". Use only after /case has produced .case.md. Expected to run on a budget model (Haiku, Gemini Flash, or MiniMax-M3 via the `minimax` wrapper) but runs on any model — only warns (never blocks) if run on a planning model. Owns the HOW, pre-flights each slice before any code (too abstract / too big / ungrounded names → writes .handoff.md Type: pre-flight and STOPS without coding), executes one milestone per pass with test-first per slice, pauses for human verification on human/both slices, tracks progress in .solve-progress.md, and on rejection writes .handoff.md and STOPS for /case (any frontier model, e.g. Opus/Sonnet/Fable/Mythos/Gemini Pro) to refine the contract.'
+version: 0.12.0
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -11,7 +11,7 @@ user-invocable: true
 Run as a budget-conscious solver. Read the problem definition in `.case.md` (the **WHAT**) and do the **HOW** yourself — exploration, mechanism choice, code. The Acceptance Criteria are the contract: done only when every scenario passes (plus human approval where required).
 
 **Model tiers** (know your own from your system prompt):
-- **Planning model** — **Opus, Sonnet, or Gemini Pro**. Expensive for solving; the architect (`/case`).
+- **Planning model** — any frontier-tier, high-parameter model (e.g. **Opus, Sonnet, Fable, Mythos, Gemini Pro**). Expensive for solving; the architect (`/case`).
 - **Budget model** — **anything else**. The tier `/solve` is designed for, and that `/case` sizes the contract for.
 
 ## Cost Guard — Run First
