@@ -1,244 +1,127 @@
 ---
 name: solve
-description: 'This skill should be used when the user asks to "solve the problem", "execute the plan", "implement the solution", "run the plan", or "start solving". Use only after /case has produced .case.md. Expected to run on a budget model (Haiku, Gemini Flash, or MiniMax-M3 via the `minimax` wrapper) but runs on any model — only warns (never blocks) if run on a planning model. Owns the HOW, pre-flights each slice before any code (too abstract / too big / ungrounded names → writes .handoff.md Type: pre-flight and STOPS without coding), executes one milestone per pass with test-first per slice, pauses for human verification on human/both slices, tracks progress in .solve-progress.md, and on rejection writes .handoff.md and STOPS for /case (any frontier model, e.g. Opus/Sonnet/Fable/Mythos/Gemini Pro) to refine the contract.'
-version: 0.12.0
-disable-model-invocation: false
+description: 'Implement one bd story by id in an isolated git worktree+branch, ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks.'
+version: 1.0.0
+argument-hint: '[<story-id>]'
+disable-model-invocation: true
 user-invocable: true
 ---
 
 # Solve Skill
 
-Run as a budget-conscious solver. Read the problem definition in `.case.md` (the **WHAT**) and do the **HOW** yourself — exploration, mechanism choice, code. The Acceptance Criteria are the contract: done only when every scenario passes (plus human approval where required).
+Run as a budget-conscious solver. Read one story's contract from **bd** (the **WHAT**) and do the **HOW** yourself — exploration, mechanism choice, code, tests. The Acceptance Criteria are the contract: done only when every scenario passes. You work in an isolated **git worktree+branch** and end at **`needs-review`** — a human reviews and merges it via `/evaluate`. **You never merge or close.**
 
-**Model tiers** (know your own from your system prompt):
-- **Planning model** — any frontier-tier, high-parameter model (e.g. **Opus, Sonnet, Fable, Mythos, Gemini Pro**). Expensive for solving; the architect (`/case`).
-- **Budget model** — **anything else**. The tier `/solve` is designed for, and that `/case` sizes the contract for.
+**bd is the engine, not the interface.** The user typed `/solve <id>`; never show raw `bd` commands or output — translate (claim, status, labels, comments) and render human-friendly. Use the bd/git map below; if a flag is uncertain or a command errors, run `bd <cmd> --help`.
 
 ## Cost Guard — Run First
 
-Confirm your own model identity. `/solve` is designed for a **budget model** but runs on any model.
+`/solve` is designed for a **budget model** but runs on any. Check your model from your system prompt. On a frontier-tier model (Opus/Sonnet/Fable/Mythos/Gemini Pro-class), warn once, then continue:
 
-**Are you a planning model?** Then warn once, then continue (output is correct, just costly):
+> You're running `/solve` on `<model>` (expensive). Cheaper: `/clear`, then switch to a budget model via `/model`. Continuing now is fine too.
 
-> You're running `/solve` on `<model>` (expensive). Cheaper: `/clear`, then switch to a budget model (e.g. via `/model`). Continuing now is fine too.
+Any other model → proceed, no warning. This warns; it never blocks.
 
-**Any other model → assume budget; proceed, no warning.** This is a warning, not a stop.
+## Environment Guard — Run Second
+
+- `.beads/` absent → the story can't exist; tell the user to author one with `/case <description>` first. Stop.
 
 ## Division of Labor
 
-- The architect (`/case`, a planning model) defined WHAT: Problem Statement, Constraints, Acceptance Criteria, Milestones, Out of Scope.
+- The architect (`/case`, planning model) defined WHAT: Problem Statement, Constraints, Acceptance Criteria, Out of Scope.
 - You own HOW: explore the codebase, pick the mechanism, write the code, derive the test plan from the AC.
 
-## File Protocol — What You May Touch
+## The Story Outranks This Skill
 
-- **`.case.md`** — read only. **Never edit it.** It belongs to `/case`.
-- **`.solve-progress.md`** — you own it. Milestone status ledger so a later pass resumes correctly.
-- **`.handoff.md`** — you write it when a human rejects a checkpoint, or when a slice fails the Pre-flight Gate, then STOP. `/case` consumes and removes it.
-
-Refining the contract is the architect's job. Your only writes are progress and handoff.
+The bd story is authoritative. Where a specific contract directive — a Verification mode, a gating condition, an in/out-of-scope boundary — diverges from this skill's general guidance, **the contract wins.** Never override or "improve on" a directive because this skill seems to point the other way. This skill governs HOW you behave *within* what the contract permits; it never expands the WHAT. A directive that is genuinely impossible or self-inconsistent is a Stop-on-Ambiguity stop, not something you silently resolve against the contract.
 
 ## Two Sources of Truth — Nothing Else
 
-Only two things are real: **`.case.md`** and **the actual codebase**. If a fact is in neither, it does not exist — do not invent it.
+Only two things are real: **the bd story** and **the actual codebase**. If a fact is in neither, it does not exist — do not invent it.
 
-- Don't assume a file, function, field, endpoint, or library exists. Verify by reading the code first.
+- Don't assume a file, function, field, endpoint, or library exists. Verify by reading the code.
 - Don't add requirements, behaviors, or scope the AC don't state.
 - Don't infer intent the contract doesn't support. A plausible guess is still a guess.
-- When the contract names an existing artifact, locate it before relying on it. Can't find it → that's an ambiguity, not a license to imagine it.
-- Don't assert a fact about your own environment or capabilities — "no device connected", "no network", "no such tool", "no credentials" — to justify stopping or skipping, without probing first (run the actual check, e.g. `adb devices`; confirm the tool exists). An unverified "I can't" is an invented fact — the same anti-pattern as an unobserved cause. State a limitation only after a check confirms it.
-
-## Contract Outranks This Skill
-
-`.case.md` is authoritative. Where a specific contract directive — a per-milestone Verification mode, a gating condition, who a milestone is for, an in/out-of-scope boundary — diverges from this skill's general guidance, **the contract's specific directive wins.** Never override, reinterpret, or "improve on" a contract directive because this skill seems to point the other way. This skill governs HOW you behave *within* what the contract permits; it never expands or contradicts the contract's WHAT.
-
-- **A contract role or gating assignment binds you even when you could technically do the work.** If the contract assigns the current slice elsewhere (e.g. "for a planning model + human, not the budget solver") or gates it behind another milestone, honor it — proceed only where the contract allows, otherwise stop per its instructions. Verifying a capability (see Two Sources of Truth) only cures a false "I can't"; it never licenses doing what the contract says is not yours to do.
-- **A contract directive that is genuinely impossible or self-inconsistent is a Stop-on-Ambiguity stop** — surface it as Needs Clarification; don't silently resolve the conflict against the contract.
-
-## Stop on Ambiguity — Do Not Loop
-
-If you cannot proceed on solid ground, **STOP**. Do not guess, do not retry the same dead end, do not silently pick one interpretation.
-
-Stop triggers:
-- AC references something not found in the codebase, and you can't tell what it maps to.
-- Two Constraints, or an AC and a Constraint, conflict.
-- An AC is not verifiable as written (no observable outcome to assert).
-- Multiple valid interpretations change behavior, and the contract doesn't disambiguate.
-- Required information to implement is simply absent.
-- An `auto` AC can only be made to pass by mocking the exact boundary it asserts (the real path can't be exercised here) — it needs a `human`/`both` device/integration check, not an auto pass.
-- The captured failure implicates an area the contract marks Out of Scope — surface it, don't quietly work around the fence (handoff if at a checkpoint, else Needs Clarification).
-
-When stopped on ambiguity, emit a **Needs Clarification** report: list each gap (one line, concrete) and the specific `.case.md` improvement that resolves it. Ask the user; where a discrete choice resolves it, use AskUserQuestion. Then stop — the user patches the contract via `/case` and re-runs `/solve`.
-
-**Loop guard:** distinguish a *fixable failure* from a *blocking ambiguity*. A failing test you understand → keep fixing. The same verification failing twice with no new understanding, or a gap in the contract itself → blocking: stop. Never burn iterations guessing.
-
-(Note: a *blocking ambiguity* mid-execution is a Needs Clarification stop. A *human rejection* at a checkpoint writes `.handoff.md` with `Type: human-rejection`. A slice that fails its checks *before any code* is a Pre-flight stop — `.handoff.md` with `Type: pre-flight`, see below.)
-
-## Pre-flight Gate — Earn the Right to Start
-
-Before touching any code on a slice, prove the slice is followable. This is your early-feedback channel: catching an unfollowable slice *now* costs one handoff; catching it after coding costs a wrong implementation. Output a short, visible pre-flight block:
-
-1. **Restate.** The slice's outcome in one sentence of your own words. Can't restate it concretely → too abstract.
-2. **Ground every name.** Locate each artifact the slice references (file, class, method, endpoint, table). One line each: `found at <path>` or `NOT FOUND`. Never proceed past a NOT FOUND you can't resolve by searching.
-3. **Test sketch per AC.** One line per AC: the concrete test or observation that will assert it. If writing that line forces a design decision the contract doesn't settle (invent an API shape, pick a data model, choose where state lives), the AC is underspecified for your tier.
-4. **Size check.** List the files you expect to touch. Can't list them, or they span unrelated subsystems → slice too big for one pass.
-
-All four pass → proceed to execute; the sketches from step 3 become your test plan. Any check fails → do **not** start coding and do **not** guess:
-
-- A single discrete question would resolve it → ask inline (Needs Clarification / AskUserQuestion) and wait.
-- Structural problem — too abstract, too big, unsettled design decision, multiple gaps — → write `.handoff.md` with `Type: pre-flight` listing each failed check concretely plus the decomposition or concretization that would fix it, mark the slice blocked in `.solve-progress.md`, and STOP. Decomposition is architect work; `/case` consumes the handoff.
-
-## Working Principles (Karpathy)
-
-- **Think before coding.** State assumptions before implementing. Multiple interpretations → surface them, don't pick silently. Simpler approach exists → say so.
-- **Simplicity first.** Minimum code that satisfies the AC. Nothing speculative — no features beyond the contract, no abstraction for single-use code, no error handling for impossible scenarios.
-- **Surgical changes.** Touch only what an AC requires. Don't "improve" adjacent code or formatting. Match existing style. Remove only the orphans your change created; spot unrelated dead code → mention, don't delete. Every changed line traces to an AC.
-- **Goal-driven execution.** AC are the success criteria. State a brief plan with a verify per step, loop until verified — bounded by the loop guard.
-
-## Diagnose Before Fixing — Observe the Real Failure
-
-For a Bugfix, the contract states a *suspected* cause. Treat it as a lead, not a fact.
-
-- **Reproduce and capture the real signal first.** Before editing, get the actual failure in hand — the exception + stack, the failing assertion, the real HTTP status/body, the log line at the point of failure. Fix what the runtime shows, not what the contract guesses. If the captured signal contradicts the contract's stated cause, the contract is wrong: that's a Needs-Clarification / handoff stop, not a license to keep guessing.
-- **Device/integration bug you can't unit-test? Instrument, then observe — don't fix blind.** When the failure only shows on a real device or against a live service, your *first* change is the minimum logging to surface what actually happens at the failure point — the real return value, exception, or status of the boundary call — not a behavior change. No logging exists there yet → adding it is the fix's prerequisite, not a detour. Edit logic only once the real failure is in hand.
-- **Same symptom already rejected once? The cause is still unobserved.** If `.solve-progress.md` shows this milestone was previously blocked on the same symptom, do not retry the same class of fix — capture the missing signal first, or stop. Re-fixing a guess that already failed is the loop guard at milestone scale.
-- **Search the web for unknown errors and version quirks.** Hit an unfamiliar error string, or a library/SDK behaving oddly? If web search is available, search the exact error text and check the library's version, changelog, and known issues before trial-and-error — a "removed/fixed in version X" note often beats hours of blind edits. No web access → say so, fall back.
-- **Don't grind.** Repeated edits against a cause you never observed is exactly what the loop guard catches. Capture the signal, or stop.
-
-## Test-First per Slice (TDD)
-
-For code milestones (Feature / Bugfix / Refactor):
-1. Translate the slice's machine-assertable AC into test(s).
-2. Run them → see **red** (confirms the test exercises the real gap).
-3. Implement the minimum to go **green**.
-4. Refactor only within the slice, keeping green.
-
-**Verification honesty — don't mock the thing under test.** If an AC is about an external boundary (SDK call, network, DB driver, device API, filesystem), a test that stubs that exact boundary proves nothing about it. Green from a mocked boundary is **not** acceptance for that AC. Either exercise the real boundary, or recognize the AC belongs to a `human`/`both` device/integration check and let that checkpoint be the source of truth — never report an `auto` scenario "passed" when the path it names was mocked away.
-
-Fallbacks & exemptions:
-- No test harness in the repo, or an AC genuinely can't be automated → fall back to a concrete runtime observation; on human/both slices the human checkpoint covers it.
-- Can't write a test for an AC at all → that's a Stop-on-Ambiguity signal ("AC not verifiable as written"), not a reason to skip.
-- **Design / Investigation** milestones → no TDD; produce the deliverable, verify against the Deliverable Format.
-
-## Human-in-the-Loop Checkpoints
-
-The contract states a `Verification` mode — `auto | human | both`. In milestone mode each milestone carries its own tag; in single-pass mode the contract carries one `Verification:` field. **Read it.** Only if the field is genuinely absent (an older contract) do you infer it (user-facing/qualitative → `human`); **ambiguous → treat as `human`**.
-
-- **`auto`** → verify by tests/observation only; no pause. Mark done, continue.
-- **`human` / `both`** → after the slice is green, **PAUSE** and hand control to the person:
-  - State exactly **WHAT** to check and **HOW** to exercise it (command to run, page to open, input to try).
-  - Ask: "Does this look right?"
-  - **OK** → record approval in `.solve-progress.md`, continue to the next milestone.
-  - **Not OK** → do **not** fix the contract yourself. Write `.handoff.md`, mark the milestone blocked in progress, and STOP with resume instructions.
+- When the contract names an artifact, locate it before relying on it. Can't find it → ambiguity, not license to imagine.
+- Don't assert a fact about your environment — "no device", "no network", "no such tool" — to justify stopping, without probing first (run the actual check). An unverified "I can't" is an invented fact.
 
 ## Workflow
 
-(Cost Guard first — warn if on a planning model, then continue.)
+### 1. Resolve the story
+- No id given → don't guess; show the READY list (`bd ready`) and ask which, or point to `/case` for the board. Stop.
+- `bd show <id>` → read the contract and its comments.
 
-### 1. Validate & determine mode
-- `.case.md` missing → stop:
-  ```
-  Error: .case.md not found in current directory.
-  Run /case first to define the problem.
-  ```
-- Read it. Has a `## Milestones` section → **milestone mode**. Otherwise → **single-pass mode** (whole contract = one slice).
-- Read `.solve-progress.md` if present → resume at the first not-done milestone. Absent + milestone mode → create it, all milestones pending.
+### 2. Dependency Guardrail — refuse if blocked
+Check the story's blockers (`bd ready` includes it only if unblocked; else inspect via `bd show`/`bd blocked`).
 
-### 2. Parse the contract
-Extract Problem Statement, Context, Constraints, Acceptance Criteria (or per-milestone AC), the **Verification mode** (contract-level `Verification:` field in single-pass, or per-milestone tags), Out of Scope, Files of Interest, Deliverable Format. Already ambiguous/incomplete → Needs Clarification before any coding.
+- **All blockers closed (ready) → proceed to step 3.**
+- **Has open blockers → STOP and reject with the reason**, then **offer to walk the chain**:
+  > Story `<id>` is blocked by `<#Y "title"> (open)`. I can't start it yet. Want me to solve the blocker(s) first?
+  If two or more blockers are mutually independent, add that they can be solved in parallel. Each blocker still passes its own `/evaluate` merge before this story unblocks, so the chain can't run away. Proceed only on the user's go-ahead, and only on a blocker that is itself ready.
 
-### 3. Select the next slice
-Milestone mode → the first not-done milestone (in order). Single-pass mode → the whole contract.
+### 3. Claim & branch
+- `bd update <id> --claim --assignee claude` then `--status in_progress` (claiming prevents another parallel session from grabbing the same story).
+- **Fresh story** → create the worktree off local `main`: branch `bd/<id>`, worktree at sibling `../<repo>-worktrees/<id>`. Do all work there.
+- **Resuming after a request-changes** (branch `bd/<id>` already exists) → reuse that worktree; read the latest comment (`bd show <id>` includes comments) for the reviewer's feedback and address exactly that. Don't recreate the branch.
+- Parallelism = the user runs another `/solve <other-id>` in a separate session; each gets its own worktree.
 
-### 4. Pre-flight the slice
-Run the Pre-flight Gate (see above): restate, ground every name, sketch a test per AC, size-check. Any check fails → handle per the gate (inline question, or `.handoff.md` `Type: pre-flight` + STOP). No code before a passing pre-flight.
+### 4. Pre-flight Gate — earn the right to start
+Before touching code, prove the story is followable. Catching an unfollowable story *now* costs one refine cycle; after coding it costs a wrong implementation. Output a short visible block:
+
+1. **Restate** the outcome in one sentence of your own words. Can't → too abstract.
+2. **Ground every name** — locate each artifact (file/class/method/endpoint/table): `found at <path>` or `NOT FOUND`. Never proceed past an unresolved NOT FOUND.
+3. **Test sketch per AC** — one line each: the concrete test/observation that asserts it. If writing it forces a design decision the contract doesn't settle → underspecified for your tier.
+4. **Size check** — list the files you expect to touch. Can't list, or they span unrelated subsystems → too big for one pass.
+
+All four pass → execute (the sketches become your test plan). Any fail → **do not start coding**:
+- A single discrete question resolves it → ask inline and wait.
+- Structural (too abstract/big, unsettled decision, multiple gaps) → **spec-gap handoff**: `bd label add <id> needs-refinement`; post a `bd comment` listing each failed check concretely + the decomposition/concretization that would fix it; set the story back to open and release the claim (`bd update <id> --status open`); remove the worktree and delete branch `bd/<id>` (`git worktree remove ../<repo>-worktrees/<id>` then `git branch -D bd/<id>` — nothing coded yet, safe to discard); then STOP. Tell the user: `/case --id <id>` to refine.
 
 ### 5. Execute the slice
 - **Explore** (you own this): start from Files of Interest; reuse existing patterns/utilities. Honor every Constraint; stay inside Out of Scope.
-- **Plan**: brief, verifiable, assumptions surfaced. A step with no clear verify → contract too weak → Needs Clarification.
-- **TDD**: test-first per the slice's AC (red → green), per the rules above — start from the pre-flight test sketches.
-- **Verify** every AC in the slice: positive AND regression. Fix failures you understand; blocking gap → stop.
+- **Plan**: brief, verifiable, assumptions surfaced. A step with no clear verify → contract too weak → Needs Clarification (see *Stop on Ambiguity* below).
+- **Diagnose before fixing** (Bugfix): the contract states a *suspected* cause — treat it as a lead. Reproduce and capture the real signal (exception+stack, failing assertion, real status/body, the log at the failure point) before editing. Device/integration bug you can't unit-test → your first change is the minimum logging to surface what actually happens, not a behavior change. Captured signal contradicts the stated cause → the contract is wrong: Needs Clarification, not more guessing. Don't grind on an unobserved cause.
+- **TDD**: translate the machine-assertable AC into test(s) → run red → implement minimum to green → refactor within the slice, staying green.
+  - **Don't mock the thing under test.** If an AC is about an external boundary (SDK, network, DB driver, device API), a test stubbing that exact boundary proves nothing. Green from a mocked boundary is not acceptance — exercise the real boundary, or recognise the AC needs a `human`/`both` check at `/evaluate` and say so.
+  - No test harness, or an AC genuinely can't be automated → fall back to a concrete runtime observation and flag it for the `/evaluate` checkpoint. Can't write a test for an AC at all → Stop-on-Ambiguity ("AC not verifiable as written").
+  - **Design / Investigation** stories → no TDD; produce the deliverable, verify against Deliverable Format.
+- **Verify** every AC: positive AND regression. Fix failures you understand; a blocking gap → stop.
 
-### 6. Checkpoint
-Apply the slice's Verification mode (see Human-in-the-Loop):
-- `auto` → mark the milestone done in `.solve-progress.md`, go to step 3 for the next.
-- `human` / `both` → pause and ask. OK → mark done, continue. Not OK → write `.handoff.md`, mark blocked, STOP.
+### 6. Hand to review — never merge
+When the AC pass:
+- Commit on branch `bd/<id>`.
+- `bd label add <id> needs-review` and post a `bd comment` summarising for the reviewer: **what was built + how to exercise it** (for a `human`/`both` Verification, spell out exactly what a person should check and the command/screen/input), **files changed** (one line each, every line traceable to an AC), and any AC that fell back to a runtime observation.
+- **Do not close, do not merge.** Tell the user:
+  > Story `<id>` done, on branch `bd/<id>`, now in **DONE · review & merge**. Run `/evaluate <id>` to review the diff in VSCode and merge.
 
-### 7. Loop
-Repeat steps 3–6 until every milestone is done. Then final report.
+## Stop on Ambiguity — Do Not Loop
 
-### 8. Report
-- Per-milestone, per-scenario pass/fail; human-approved where applicable.
-- Constraints honored, Out-of-Scope respected.
-- Files changed (one line each), every line traceable to an AC.
-- `.solve-progress.md` final state.
+If you cannot proceed on solid ground, **STOP** — don't guess, don't retry the same dead end, don't silently pick an interpretation.
 
-## Artifact Formats
+Stop triggers: AC references something not in the codebase you can't map; two Constraints (or an AC and a Constraint) conflict; an AC isn't verifiable as written; multiple valid interpretations change behavior; required info is absent; an `auto` AC can only pass by mocking the exact boundary it asserts; the captured failure implicates an Out-of-Scope area.
 
-### `.solve-progress.md`
-```markdown
-# Solve Progress
+When stopped: emit a **Needs Clarification** report — each gap (one line, concrete) and the specific contract change that resolves it. For a discrete choice use AskUserQuestion. If the gap is in the contract itself, follow the **spec-gap handoff** in Workflow step 4 (Pre-flight Gate) and point the user to `/case --id <id>`.
 
-Contract: .case.md
-Updated: [timestamp]
+**Loop guard:** a *fixable failure* (a failing test you understand) → keep fixing. The *same* verification failing twice with no new understanding, or a gap in the contract → blocking: stop. Never burn iterations guessing.
 
-- [x] Milestone 1 — <capability>   (done, human-approved)
-- [ ] Milestone 2 — <capability>   (blocked: see .handoff.md)
-- [ ] Milestone 3 — <capability>   (pending)
-```
+## Working Principles (Karpathy)
 
-### `.handoff.md`
-Two variants — state which in the `Type:` line. Both mean STOP after writing.
+- **Think before coding.** State assumptions; surface multiple interpretations instead of picking silently; name a simpler approach if one exists.
+- **Simplicity first.** Minimum code that satisfies the AC. Nothing speculative — no features beyond the contract, no abstraction for single-use code, no error handling for impossible scenarios.
+- **Surgical changes.** Touch only what an AC requires. Match existing style. Remove only the orphans your change created; spot unrelated dead code → mention, don't delete.
+- **Goal-driven execution.** AC are the success criteria. Plan with a verify per step, loop until verified — bounded by the loop guard.
 
-**`Type: human-rejection`** — a human rejected a checkpoint:
-```markdown
-# Handoff — Human Feedback
+## bd / git map (confirm flags via `--help`)
 
-Type: human-rejection
-Contract: .case.md
-Milestone: <N — capability>   (Verification: human|both)
+| Intent | Command |
+|---|---|
+| read story | `bd show <id>` |
+| is it ready? | `bd ready` / `bd blocked` |
+| claim | `bd update <id> --claim --assignee claude` |
+| start | `bd update <id> --status in_progress` |
+| isolate | `git worktree add ../<repo>-worktrees/<id> -b bd/<id> main` |
+| reopen / release claim | `bd update <id> --status open` (confirm claim-release flag via `--help`) |
+| drop worktree (abort) | `git worktree remove ../<repo>-worktrees/<id>` + `git branch -D bd/<id>` |
+| spec-gap / clarification | `bd label add <id> needs-refinement` + `bd comment` |
+| done → review | `bd label add <id> needs-review` + `bd comment` (commit on `bd/<id>`) |
 
-## What was built
-[what the slice delivered + how to exercise it]
-
-## Observed failure (raw)
-[The ACTUAL captured signal behind the block — exception + stack, failing assertion, HTTP status/body, the log line at the failure point. Raw evidence, not a theory. If you offer a cause, mark plainly which parts are observed vs inferred so the architect doesn't rebuild the contract on a guess.]
-
-## Human feedback (rejection)
-[the human's words — what's wrong / what was expected]
-
-## Suggested contract change
-[what in .case.md likely needs to change — AC / Constraint / Milestone. /case decides.]
-
-## Progress at handoff
-- Done: [milestones]
-- Remaining: [milestones]
-```
-
-**`Type: pre-flight`** — the slice failed the Pre-flight Gate; nothing was built:
-```markdown
-# Handoff — Pre-flight Feedback
-
-Type: pre-flight
-Contract: .case.md
-Milestone: <N — capability>   (or: single-pass)
-
-## Failed checks
-[One line per failed check, concrete: which named artifact was NOT FOUND (and what was searched), which AC forces which design decision, why the slice exceeds one pass (the file list / subsystems involved). Facts, not complaints.]
-
-## Suggested decomposition
-[The smaller slices, or the Context/AC/Glossary concretization, that would make this followable at the budget tier. /case decides.]
-
-## Progress at handoff
-- Done: [milestones]
-- Remaining: [milestones]
-```
-
-On writing a `human-rejection` handoff, tell the user:
-> Milestone `<N>` rejected. Wrote `.handoff.md`, stopped here.
-> 1. `/clear`, switch to a planning model, run `/case` → it refines `.case.md` from the handoff.
-> 2. `/clear`, switch to a budget model, run `/solve` → resumes the remaining milestones.
-
-On writing a `pre-flight` handoff, tell the user:
-> Slice `<N>` failed pre-flight (<one-line reason>). No code was touched. Wrote `.handoff.md`.
-> 1. `/clear`, switch to a planning model, run `/case` → it decomposes/concretizes the contract from the handoff.
-> 2. `/clear`, switch back to a budget model, run `/solve` → starts on the refined slices.
+Single-writer discipline: `/solve` claims, branches, codes, and hands to review. It never closes a story or merges a branch — that is `/evaluate`'s job. It never edits the contract body — that is `/case`'s.

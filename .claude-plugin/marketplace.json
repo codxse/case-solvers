@@ -6,12 +6,12 @@
     {
       "name": "case-solvers",
       "source": "./plugins/case-solvers",
-      "description": "Case/solve workflow: a planning-model architect (/case) writes a budget-solver contract that a cheap solver model (/solve) executes test-first.",
-      "version": "0.3.0",
+      "description": "A bd-backed, parallel-capable workflow: /case authors stories/epics in Beads, /solve implements one in an isolated worktree, /evaluate merges after human review. Requires the bd (Beads) CLI.",
+      "version": "1.0.0",
       "author": { "name": "nadiar", "email": "codex@nadiar.id" },
       "license": "MIT",
       "category": "workflow",
-      "keywords": ["workflow", "planning", "architect", "case", "solve"]
+      "keywords": ["workflow", "planning", "architect", "case", "solve", "evaluate", "beads", "bd", "epic", "parallel"]
     },
     {
       "name": "writing-claude-md",

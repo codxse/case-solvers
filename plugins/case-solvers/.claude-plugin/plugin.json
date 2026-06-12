@@ -2,11 +2,11 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "case-solvers",
   "displayName": "Case Solvers",
-  "version": "0.3.0",
-  "description": "A two-phase coding workflow: /case (planning model) defines the WHAT as a budget-solver contract; /solve (budget model) owns the HOW and executes it.",
+  "version": "1.0.0",
+  "description": "A bd-backed, parallel-capable coding workflow: /case (planning model) authors stories/epics in Beads, /solve (budget model) implements one in an isolated git worktree, /evaluate merges it after human review. Dependency-aware; bd stays hidden behind the three commands. Requires the bd (Beads) CLI.",
   "author": { "name": "nadiar", "email": "codex@nadiar.id" },
   "homepage": "https://github.com/codxse/case-solvers",
   "repository": "https://github.com/codxse/case-solvers",
   "license": "MIT",
-  "keywords": ["workflow", "planning", "architect", "case", "solve"]
+  "keywords": ["workflow", "planning", "architect", "case", "solve", "evaluate", "beads", "bd", "epic", "parallel", "worktree"]
 }

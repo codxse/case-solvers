@@ -9,6 +9,54 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-13
+
+Breaking: the `case-solvers` plugin (`0.3.0` → `1.0.0`) is re-architected around **bd
+(Beads)** for a durable, dependency-aware, parallel-capable workflow. `bd` is now required,
+and the singleton dot-files are retired. `bd` stays hidden behind three commands —
+`/case`, `/solve`, `/evaluate` — the user never types a `bd` command.
+
+### Added
+- New skill **`/evaluate`** (`v1.0.0`) — the human review gate (Gate N): opens a finished
+  story's branch in VSCode for the human to read the diff, then enacts the verdict — approve
+  (merge to `main`, close the story, unblock dependents, drop the worktree) or request changes
+  (feedback as a bd comment, back to `/solve` or `/case`).
+- **Stories & epics** in bd: `/case <text>` authors one story; a large goal decomposes into an
+  epic — a dependency graph of stories — reviewed at **Gate 0** before any issue is created.
+- **Board**: `/case` with no argument renders backlog / in-progress / review-queue / blocked,
+  with epic rollups. `/case <id>` shows one story's contract + its comments.
+- **Isolation**: every solve runs in its own git worktree+branch (`bd/<id>`); `/evaluate`
+  reviews and merges it like a PR. Merge conflicts pass a confidence gate (clear+tests-green →
+  auto-resolve; ambiguous → escalate to the human).
+- **Dependency guardrail**: `/solve <id>` refuses a still-blocked story with a reason and
+  offers to walk the dependency chain.
+
+### Changed
+- `/case` (`0.10.0` → `1.0.0`) authors into bd instead of writing a persistent `.case.md`;
+  gains board, detail, and epic-decomposition modes. The contract template, AC Quality Rubric,
+  Budget-Solver Fit, and Pre-write guard carry over.
+- `/solve` (`0.12.0` → `1.0.0`) takes a story id, works in a worktree, ends at `needs-review`
+  (never merges or closes). The milestone machinery is gone — epics replace it.
+- Plugin & marketplace entry version `0.3.0` → `1.0.0`; descriptions/keywords mention bd,
+  epics, parallel, `/evaluate`.
+- All three skills are slash-only (`disable-model-invocation: true`) with lean one-line
+  descriptions — no natural-language auto-trigger. Standardised argument hints: `/case
+  [<description>] [--id <story-id>]`, `/solve` and `/evaluate` `[<story-id>]`. `/case`
+  tells a story id from a description via an explicit `--id` flag.
+- Skill bodies trimmed for token cost: dropped per-invocation `bd prime` (static command
+  maps + `bd <cmd> --help` fallback), de-duplicated guidance, removed the worked example.
+
+### Removed
+- The persistent singleton dot-files. `.case.md` survives only as a transient
+  epic-decomposition surface (deleted after generating bd issues); `.solve-progress.md` and
+  `.handoff.md` are gone — progress is the bd graph, and handoff feedback is bd comments
+  per story.
+
+### Requires
+- The `bd` (Beads) CLI installed and on `PATH` — `brew install beads`, `npm i -g @beads/bd`,
+  or `go install`. Skills assume it's present (no install check) and run `bd init` on first
+  use. See README → Requirements.
+
 ## [0.4.0] - 2026-06-12
 
 ### Added
@@ -70,7 +118,8 @@ publishable Claude Code plugin marketplace.
   `claude plugin validate --strict`. The original values contained `: ` (colon-space)
   sequences that broke plain-scalar parsing and silently dropped the metadata.
 
-[Unreleased]: https://github.com/codxse/case-solvers/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/codxse/case-solvers/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/codxse/case-solvers/compare/v0.4.0...v1.0.0
 [0.4.0]: https://github.com/codxse/case-solvers/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/codxse/case-solvers/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/codxse/case-solvers/compare/v0.1.0...v0.2.0

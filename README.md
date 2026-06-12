@@ -4,7 +4,7 @@ A Claude Code plugin marketplace by [codxse](https://github.com/codxse). Current
 
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
-| `case-solvers` | `/case`, `/solve` | Two-phase coding workflow: architect contract → budget-solver execution |
+| `case-solvers` | `/case`, `/solve`, `/evaluate` | bd-backed, parallel-capable workflow: author stories/epics → solve in worktrees → review & merge |
 | `writing-claude-md` | `/writing-claude-md` | Write lean, high-signal CLAUDE.md / AGENTS.md context files |
 
 ## Install
@@ -22,39 +22,55 @@ Then install whichever plugins you want:
 
 ---
 
-## `case-solvers` — Two-phase coding workflow
+## `case-solvers` — bd-backed, parallel-capable coding workflow
 
-A capable **planning model** acts as the architect and defines *what* to build; a cheap
-**budget model** acts as the solver and does *how* to build it.
+A capable **planning model** acts as the architect (`/case`) and defines *what* to build; a
+cheap **budget model** acts as the solver (`/solve`) and does *how*; you review and merge
+(`/evaluate`). Work lives in [**bd** (Beads)](https://github.com/steveyegge/beads) — a
+git-backed, dependency-aware issue tracker — so you can stockpile many tasks and solve any of
+them anytime, in parallel. **bd stays hidden**: you only ever type the three commands.
 
-- **`/case`** — runs on a planning model — any frontier model (e.g. Opus / Sonnet / Fable / Mythos / Gemini Pro). Defines the problem precisely and writes `.case.md`: the requirement, boundaries, and acceptance criteria. Refuses to run on a budget model.
-- **`/solve`** — designed for a budget model (Haiku / Gemini Flash / MiniMax-M3). Reads `.case.md`, explores the codebase, picks the mechanism, and implements test-first — one milestone per pass.
+**Requirements:** the `bd` (Beads) CLI must be installed and on your `PATH` — `brew install
+beads` (or `npm i -g @beads/bd`, or `go install github.com/steveyegge/beads@latest`). The
+skills assume it's present (they no longer check) and run `bd init` in your project on first
+use.
 
-The two are a loop: when a slice is too vague or a human rejects the result, `/solve` writes `.handoff.md` and stops; `/case` reads it and refines the contract.
+### The three commands
 
-### Usage
+- **`/case`** — planning model (any frontier model: Opus / Sonnet / Fable / Mythos / Gemini Pro).
+  - `/case <description>` → authors one **story** (a precise, verifiable contract), or
+    decomposes a big goal into an **epic** (a dependency graph of stories) for you to review
+    *before* anything is created.
+  - `/case` → the **board**: backlog, in progress, done & awaiting merge, blocked.
+  - `/case --id <id>` → one story's contract + its comments.
+- **`/solve <id>`** — budget model (Haiku / Gemini Flash / MiniMax-M3). Refuses with a reason
+  if the story is still blocked; otherwise claims it, works in its own git **worktree+branch**
+  test-first, and stops at *done · review*. Never merges.
+- **`/evaluate <id>`** — opens the branch in **VSCode** so you review the diff, then enacts
+  your verdict: **approve** → merge to `main`, close the story, unblock dependents;
+  **request changes** → feedback goes back to `/solve` (or `/case`).
 
-```
-/case <problem description>      # planning model → writes .case.md
-# switch to a budget model (/model), then:
-/solve                           # budget model → implements against the contract
-```
+### Typical flow
 
-Typical flow:
+1. `/case` to capture stories anytime (or decompose an epic, reviewing the graph first).
+2. On a budget model, `/solve <id>` the ones you want — run several in separate sessions to
+   work in parallel; each gets an isolated worktree.
+3. `/evaluate <id>` to review in VSCode and merge. Approving unblocks dependent stories.
 
-1. On a planning model, run `/case` to turn a task into a precise, verifiable contract.
-2. Switch to a budget model and run `/solve` to implement it test-first.
-3. If `/solve` writes `.handoff.md` (pre-flight gap or human rejection), switch back to a planning model and run `/case` again to refine, then resume `/solve`.
+You are the scheduler: you pick what to solve and what to merge. `bd` enforces dependencies (a
+blocked story is refused with a reason) and the agents stay guardrailed workers.
 
 ### Runtime artifacts
 
-These files are written into your **working project** (not this repo):
+Stored in **your working project** (not this repo):
 
-| File | Written by | Purpose |
-|------|------------|---------|
-| `.case.md` | `/case` | The problem definition (the WHAT) — the contract. |
-| `.solve-progress.md` | `/solve` | Milestone/slice progress tracking. |
-| `.handoff.md` | `/solve` | Feedback to `/case` on rejection or pre-flight gap. |
+| What | Where | Purpose |
+|------|-------|---------|
+| Stories / epics | `.beads/` (git-committed) | The durable backlog + dependency graph. |
+| Feedback / refine notes | bd comments on a story | Per-story review feedback (refine notes + your verdicts). |
+| Work under review | git worktrees on `bd/<id>` | Isolated branch per story awaiting `/evaluate`. |
+
+Read them via `/case` and `/case --id <id>` — you never need `bd` commands directly.
 
 ---
 
