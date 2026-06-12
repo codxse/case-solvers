@@ -81,10 +81,23 @@ Render one story: its contract (Problem Statement … Out of Scope), current sta
 
 From the user description, classify problem type (Feature / Bugfix / Refactor / Design / Investigation — see Problem Types), draft the contract, grill on scope-affecting unknowns one at a time (each with a recommended answer; explore the codebase instead of asking when the answer is there), then judge size against **Budget-Solver Fit**:
 
-- **Fits one budget pass → Story mode.** Draft the full contract (Output Format). Show it inline, confirm with the user, then create one issue: `bd create "<title>" -t story` and write the contract markdown as its body. Report the new id and that it's now on the board.
+- **Fits one budget pass → Story mode.** Draft the full contract (Output Format), apply Pre-write Guard and AC Quality Rubric, then follow the **Staging Loop** to write, iterate, and commit.
 - **Too large → Epic mode.** Decompose into ordered, independently-solvable stories. This is **Gate 0** — see Decomposition.
 
 Drafting rules (both modes): inference-first; if the user names a concrete artifact, targeted exploration is allowed (budget ~3 Read + 2 Grep) to make Context/AC concrete — but verifying any artifact the draft ends up naming is mandatory and unbudgeted (Grounded names). Run the **Pre-write guard** and **AC Quality Rubric** on every story before it goes into bd.
+
+---
+
+## Staging Loop
+
+`.case.md` is the transient staging file — created for the authoring loop, deleted when the contract is committed to bd. Both story and epic modes use it.
+
+1. **Overwrite guard.** If `.case.md` already exists, ask the user to confirm overwrite before writing anything. If the user declines, stop — do not modify the file and do not continue authoring.
+2. **Write the draft.** Write the full contract (or decomposition doc) to `.case.md`. Report that the file was created; do not print the contract inline.
+3. **Feedback loop.** When the user describes a change or asks for an improvement in conversation, read the current `.case.md`, apply the change, and rewrite the file. Do not print the full contract inline.
+4. **Commit on confirm.** When the user confirms ("go ahead", "looks good", or equivalent):
+   - **Story:** read `.case.md`, create the bd issue with that exact content as the body (`bd create "<title>" -t story`), delete `.case.md`, report the new id.
+   - **Epic:** read `.case.md` and proceed to generate the bd graph (Decomposition step 5), then delete `.case.md`.
 
 ---
 
@@ -92,12 +105,12 @@ Drafting rules (both modes): inference-first; if the user names a concrete artif
 
 Decomposition is design work — it belongs here on the planning model, never on the budget solver. Produce a transient review doc, get human approval, then generate the bd graph.
 
-1. **Write `.case.md`** as the decomposition doc: the epic goal, then each child story top-to-bottom (title + contract + its dependencies), readable in one pass. This is the only thing the human reviews.
+1. **Write `.case.md`** as the decomposition doc: the epic goal, then each child story top-to-bottom (title + contract + its dependencies), readable in one pass. This is the only thing the human reviews. Apply the **Staging Loop** overwrite guard before writing.
 2. **Sizing each story:** one capability, ≤~3 AC scenarios, files within one subsystem — solvable by a budget model in one pass. A story too big → split it.
 3. **Edges:**
    - **Minimise sibling file-overlap.** Stories that will edit the same files should be sequenced with a dependency (or merged), not left as parallel siblings — it keeps later merges clean.
    - Add a `blocks` edge only for a real ordering need — the dependent genuinely needs its blocker merged first. Don't over-serialise; independent stories should stay parallel.
-4. **Gate 0:** present the doc; the user edits it (split/merge stories, fix edges, fix AC) and approves. Nothing is created until approval — catching a wrong decomposition here costs one edit; catching it after solving costs rework.
+4. **Gate 0:** present the doc; the user edits it in their editor (split/merge stories, fix edges, fix AC) or asks for changes in conversation (follow the Staging Loop feedback step). Nothing is created until approval — catching a wrong decomposition here costs one edit; catching it after solving costs rework.
 5. **Generate on approve:** `bd create "<epic>" -t epic`; one `bd create "<story>" -t story` per child with a `parent-child` edge to the epic; `bd dep add <blocker> --blocks <dependent>` per ordering edge. Then **delete `.case.md`** — bd is now the source of truth. Report the epic id and child ids, and that the board now shows them.
 
 ---
