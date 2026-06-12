@@ -35,6 +35,17 @@ beads` (or `npm i -g @beads/bd`, or `go install github.com/steveyegge/beads@late
 skills assume it's present (they no longer check) and run `bd init` in your project on first
 use.
 
+To skip permission prompts for `bd` in your project, add it to `allowedTools` in
+`.claude/settings.json`:
+
+```json
+{
+  "allowedTools": [
+    "Bash(bd *)"
+  ]
+}
+```
+
 ### The three commands
 
 - **`/case`** — planning model (any frontier model: Opus / Sonnet / Fable / Mythos / Gemini Pro).
