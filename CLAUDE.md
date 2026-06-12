@@ -1,6 +1,34 @@
-# Project Instructions for AI Agents
+# Case Solvers — a Claude Code plugin marketplace
 
-This file provides instructions and context for AI coding agents working on this project.
+This repo ships Claude Code **plugins**, not an application. The "source" is prompt files
+(`SKILL.md`), so there is no build or test suite — verifying a change means reading the prompt
+and the `CHANGELOG.md`, then running the skill.
+
+## What this is
+
+`.claude-plugin/marketplace.json` publishes two plugins under `plugins/`:
+
+- **case-solvers** — `/case`, `/solve`, `/evaluate`: a bd-backed, parallel-capable coding workflow.
+- **writing-claude-md** — `/writing-claude-md`: authoring lean, high-signal context files.
+
+## Philosophy (this drives how every skill is worded)
+
+- **Three model tiers, three commands.** `/case` runs on a planning/frontier model and authors
+  the **WHAT** (requirement, boundary, contract); `/solve` runs on a budget model and does the
+  **HOW** (code, in an isolated worktree+branch); `/evaluate` is the human review-and-merge gate.
+  A skill is expected to recognize its own tier from its system prompt.
+- **bd is the engine, not the interface.** bd (Beads) is the durable issue store, but the
+  plugin's end user never types a `bd` command and never sees raw bd output — skills translate
+  to/from bd and render human-friendly. Keep bd hidden when editing skill prose. (This is the
+  *opposite* of how you, the agent working on this repo, track your own tasks — see below.)
+- **Story = WHAT, solver = HOW.** A story states a testable, unambiguous outcome — never the
+  mechanism. "Specific ≠ prescriptive."
+
+## Editing skills
+
+- Bump the skill's frontmatter `version` and add a `CHANGELOG.md` entry in the same change. The
+  marketplace/plugin `version` tracks the published plugin, not the per-skill frontmatter versions.
+- `AGENTS.md` is a symlink to this file — edit `CLAUDE.md`.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:7510c1e2 -->
 ## Beads Issue Tracker
@@ -50,26 +78,4 @@ bd close <id>         # Complete work
 - If push fails, resolve and retry until it succeeds
 <!-- END BEADS INTEGRATION -->
 
-## Non-Interactive Shell Commands
-
-**ALWAYS use non-interactive flags** with file operations to avoid hanging on confirmation prompts.
-
-Shell commands like `cp`, `mv`, and `rm` may be aliased to include `-i` (interactive) mode on some systems, causing the agent to hang indefinitely waiting for y/n input.
-
-**Use these forms instead:**
-```bash
-# Force overwrite without prompting
-cp -f source dest           # NOT: cp source dest
-mv -f source dest           # NOT: mv source dest
-rm -f file                  # NOT: rm file
-
-# For recursive operations
-rm -rf directory            # NOT: rm -r directory
-cp -rf source dest          # NOT: cp -r source dest
-```
-
-**Other commands that may prompt:**
-- `scp` - use `-o BatchMode=yes` for non-interactive
-- `ssh` - use `-o BatchMode=yes` to fail instead of prompting
-- `apt-get` - use `-y` flag
-- `brew` - use `HOMEBREW_NO_AUTO_UPDATE=1` env var
+> If the code contradicts anything above, the code wins — update this file in the same change.

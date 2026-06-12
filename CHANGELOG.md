@@ -9,6 +9,12 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+### Changed
+- Rewrote `CLAUDE.md` (and the `AGENTS.md` symlink) as a lean, high-signal context file:
+  states what the repo is (a plugin marketplace, no build/test suite), the three-tier
+  `/case`/`/solve`/`/evaluate` philosophy, the "bd is the engine, not the interface" rule, and
+  the skill-editing convention. Dropped the generic non-interactive-shell boilerplate.
+
 ## [1.0.0] - 2026-06-13
 
 Breaking: the `case-solvers` plugin (`0.3.0` → `1.0.0`) is re-architected around **bd
