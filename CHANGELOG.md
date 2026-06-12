@@ -60,7 +60,7 @@ publishable Claude Code plugin marketplace.
   `claude plugin validate --strict`. The original values contained `: ` (colon-space)
   sequences that broke plain-scalar parsing and silently dropped the metadata.
 
-[Unreleased]: https://github.com/nadiar/case-solvers/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/nadiar/case-solvers/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/nadiar/case-solvers/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/nadiar/case-solvers/releases/tag/v0.1.0
+[Unreleased]: https://github.com/codxse/case-solvers/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/codxse/case-solvers/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/codxse/case-solvers/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/codxse/case-solvers/releases/tag/v0.1.0

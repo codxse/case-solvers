@@ -18,7 +18,7 @@ The two are a loop: when a slice is too vague to build, or a human rejects the r
 ## Install
 
 ```
-/plugin marketplace add nadiar/case-solvers
+/plugin marketplace add codxse/case-solvers
 /plugin install case-solvers@case-solvers
 ```
 
