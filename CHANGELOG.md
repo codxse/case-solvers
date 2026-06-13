@@ -9,6 +9,15 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+### Added
+- `/evaluate` (`1.0.0` → `1.1.0`) — new `--skip-review` flag: `/evaluate --skip-review <id>`
+  merges a `needs-review` story straight to `main` (close, unblock dependents, drop the worktree —
+  identical to approving) **without** opening the diff in VSCode or asking a verdict, for stories
+  clear enough that no human review is wanted. The skip always prints a non-dismissible warning
+  (`⚠ Merged <id> without review — skipped the human quality gate.`). The merge-conflict confidence
+  gate is unchanged — an ambiguous conflict still stops for the human. Plain `/evaluate <id>`
+  (no flag) is unchanged.
+
 ### Fixed
 - `/case` (`1.1.0` → `1.1.1`) — the Model Guard now reliably stops authoring on a budget
   model. The gate anchors to the session's exact model ID (not self-assessed capability),
