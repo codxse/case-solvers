@@ -9,6 +9,10 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-13
+
+Plugin & marketplace entry `case-solvers` `1.0.0` → `1.1.0`.
+
 ### Changed
 - `/case` (`1.0.0` → `1.1.0`) — read-only modes now run on **any model tier**: Board (`/case`)
   and Detail (`/case --id`) render without requiring a planning model. Authoring (author,
