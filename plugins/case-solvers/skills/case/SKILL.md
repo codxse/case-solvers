@@ -1,7 +1,7 @@
 ---
 name: case
 description: 'Plan and author stories/epics into the bd backlog, refine a story, or show the board. Authoring needs a planning model; board/detail run on any tier.'
-version: 1.1.1
+version: 1.1.2
 argument-hint: '[<description>] [--id <story-id>]'
 disable-model-invocation: true
 user-invocable: true
@@ -112,10 +112,9 @@ Drafting rules (both modes): inference-first; if the user names a concrete artif
 
 `.case.md` is the transient staging file — created for the authoring loop, deleted when the contract is committed to bd. Both story and epic modes use it.
 
-1. **Overwrite guard.** If `.case.md` already exists, ask the user to confirm overwrite before writing anything. If the user declines, stop — do not modify the file and do not continue authoring.
-2. **Write the draft.** Write the full contract (or decomposition doc) to `.case.md` **in the project root** — the `primary working directory` shown in your environment. If the current session is inside a worktree, resolve the main checkout path and write there; never write inside a worktree subdirectory. Report that the file was created; do not print the contract inline.
-3. **Feedback loop.** When the user describes a change or asks for an improvement in conversation, read the current `.case.md`, apply the change, and rewrite the file. Do not print the full contract inline.
-4. **Commit on confirm.** When the user confirms ("go ahead", "looks good", or equivalent):
+1. **Write the draft.** Write the full contract (or decomposition doc) to `.case.md` in the **main checkout root** — never a worktree. Resolve that root as the first entry of `git worktree list`; the session's `primary working directory` may itself be a worktree, so don't assume it. Overwrite an existing `.case.md` without asking. Report that the file was created; do not print the contract inline.
+2. **Feedback loop.** When the user describes a change or asks for an improvement in conversation, read the current `.case.md`, apply the change, and rewrite the file. Do not print the full contract inline.
+3. **Commit on confirm.** When the user confirms ("go ahead", "looks good", or equivalent):
    - **Story:** read `.case.md`, create the bd issue with that exact content as the body (`bd create "<title>" -t story`), delete `.case.md`, report the new id.
    - **Epic:** read `.case.md` and proceed to generate the bd graph (Decomposition step 5), then delete `.case.md`.
 
@@ -125,7 +124,7 @@ Drafting rules (both modes): inference-first; if the user names a concrete artif
 
 Decomposition is design work — it belongs here on the planning model, never on the budget solver. Produce a transient review doc, get human approval, then generate the bd graph.
 
-1. **Write `.case.md`** as the decomposition doc: the epic goal, then each child story top-to-bottom (title + contract + its dependencies), readable in one pass. This is the only thing the human reviews. Apply the **Staging Loop** overwrite guard before writing.
+1. **Write `.case.md`** as the decomposition doc: the epic goal, then each child story top-to-bottom (title + contract + its dependencies), readable in one pass. This is the only thing the human reviews. Write it per the **Staging Loop** step 1 — main checkout root, overwriting any existing `.case.md`.
 2. **Sizing each story:** one capability, ≤~3 AC scenarios, files within one subsystem — solvable by a budget model in one pass. A story too big → split it.
 3. **Edges:**
    - **Minimise sibling file-overlap.** Stories that will edit the same files should be sequenced with a dependency (or merged), not left as parallel siblings — it keeps later merges clean.
