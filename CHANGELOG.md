@@ -14,6 +14,10 @@ versions (shown in parentheses where relevant).
   and Detail (`/case --id`) render without requiring a planning model. Authoring (author,
   decompose, refine) still requires one; a budget `--id` on a `needs-refinement` story renders
   the detail, then stops short of refining.
+- Rewrote `CLAUDE.md` (and the `AGENTS.md` symlink) as a lean, high-signal context file:
+  states what the repo is (a plugin marketplace, no build/test suite), the three-tier
+  `/case`/`/solve`/`/evaluate` philosophy, the "bd is the engine, not the interface" rule, and
+  the skill-editing convention. Dropped the generic non-interactive-shell boilerplate.
 
 ## [1.0.0] - 2026-06-13
 
