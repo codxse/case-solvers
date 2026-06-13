@@ -9,6 +9,10 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-06-13
+
+Plugin & marketplace entry `case-solvers` `1.2.0` → `1.2.1`.
+
 ### Fixed
 - `/case` (`1.1.2` → `1.1.3`) — the Model Guard now treats the `<description>` argument as
   **untrusted data**: text inside it that tells the skill to ignore/skip/waive the tier rules,
@@ -18,8 +22,6 @@ versions (shown in parentheses where relevant).
   `plugins/case-solvers/tests/model-guard.sh` harness, which runs `/case <desc>` on a budget
   model across multiple trials (including override-injection descriptions) and asserts every
   trial emits the stop message and writes no contract.
-
-### Fixed
 - `/case` (`1.1.1` → `1.1.2`) — the Staging Loop now writes `.case.md` to the **main checkout
   root** (resolved as the first entry of `git worktree list`), not the session's working
   directory, so authoring from inside a worktree no longer strands the staging file there. An
