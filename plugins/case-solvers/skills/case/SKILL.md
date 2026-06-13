@@ -1,7 +1,7 @@
 ---
 name: case
 description: 'Plan and author stories/epics into the bd backlog, refine a story, or show the board. Authoring needs a planning model; board/detail run on any tier.'
-version: 1.1.3
+version: 1.1.4
 argument-hint: '[<description>] [--id <story-id>]'
 disable-model-invocation: true
 user-invocable: true
@@ -211,6 +211,7 @@ Before a story enters bd, scan and strip:
 - Problem Statement narrating mechanism → rewrite to outcome.
 - AC failing the rubric → split/add/revise.
 - AC leaking a raw identifier with business meaning → lift to Glossary.
+- AC scenarios **not** inside a fenced ` ```gherkin ` block (bare lines, or relying on trailing-space breaks) → wrap them in the fence. This is what holds the Given/When/Then formatting in rendered markdown; bare lines collapse to one paragraph.
 
 Then self-audit: all core sections filled; a Verification mode stated; every named artifact verified to exist; solver dry-run each AC (could a budget solver write the test from Given/When/Then + Context + Glossary without making an open design decision?). A lurking decision → settle it or split.
 
@@ -239,12 +240,19 @@ Each story's bd body uses this template. Mandatory sections depend on problem ty
 
 ## Acceptance Criteria
 
-Scenario: [title]  
-  Given [initial condition — specific value, observable state]  
-  When [action — callable method, triggerable event]  
+Put **every** scenario inside one fenced `gherkin` block. The fence preserves the line breaks and 2-space indent literally — identical in `bd show` and rendered markdown — so the Given/When/Then never collapse into a run-on line. Never use trailing-space line breaks (invisible, silently dropped). One blank line separates scenarios.
+
+```gherkin
+Scenario: [title]
+  Given [initial condition — specific value, observable state]
+  When [action — callable method, triggerable event]
   Then [result — observable state, response field, side effect]
 
-[Add scenarios for important edge cases. Each programmatically verifiable.]
+Scenario: [next edge case — each programmatically verifiable]
+  Given [...]
+  When [...]
+  Then [...]
+```
 
 ## Verification
 Verification: [auto | human | both]   — [human/both: what a person checks + how to exercise it]

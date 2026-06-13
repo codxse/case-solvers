@@ -9,6 +9,21 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-06-14
+
+Plugin & marketplace entry `case-solvers` `1.2.1` → `1.2.2`.
+
+### Fixed
+- `/case` (`1.1.3` → `1.1.4`) — Acceptance Criteria now author into a fenced ` ```gherkin `
+  block instead of relying on trailing-two-space markdown hard breaks. The old format kept its
+  line breaks in `bd show` (raw text) but silently collapsed Given/When/Then into one run-on
+  paragraph when rendered as markdown whenever the agent dropped the invisible trailing spaces —
+  which happened often, since there was nothing visible to reproduce. A code fence preserves the
+  line breaks and 2-space indent literally and identically in both `bd show` and rendered
+  markdown, and the structure is visible so the agent can't omit it. The Output Format template,
+  Pre-write Guard (new scan item that wraps bare/trailing-space AC in the fence), and the format
+  rule were updated together.
+
 ## [1.2.1] - 2026-06-13
 
 Plugin & marketplace entry `case-solvers` `1.2.0` → `1.2.1`.
