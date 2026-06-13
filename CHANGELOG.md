@@ -9,6 +9,13 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+### Fixed
+- `/case` (`1.1.1` → `1.1.2`) — the Staging Loop now writes `.case.md` to the **main checkout
+  root** (resolved as the first entry of `git worktree list`), not the session's working
+  directory, so authoring from inside a worktree no longer strands the staging file there. An
+  existing `.case.md` is overwritten without a confirmation prompt — the old "Overwrite guard"
+  step is removed. The Decomposition (Epic) section's reference to that guard is updated to match.
+
 ## [1.2.0] - 2026-06-13
 
 Plugin & marketplace entry `case-solvers` `1.1.0` → `1.2.0`.
