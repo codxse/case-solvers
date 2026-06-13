@@ -1,7 +1,7 @@
 ---
 name: case
 description: 'Plan and author stories/epics into the bd backlog, refine a story, or show the board. Authoring needs a planning model; board/detail run on any tier.'
-version: 1.1.0
+version: 1.1.1
 argument-hint: '[<description>] [--id <story-id>]'
 disable-model-invocation: true
 user-invocable: true
@@ -30,13 +30,21 @@ First determine your mode from the argument (see Trigger & Modes) — argument p
 
 **Read-only modes run on any tier.** Board (`/case`, no argument) and Detail (`/case --id <id>`) only read bd and render; they author nothing. Run them on whatever model you are — budget or planning.
 
-**Authoring modes need a planning model.** Author (`/case <description>`), Decomposition, and Refine create or modify bd issues. They MUST run on a planning model. Judge your tier, not your name — the example names are illustrative, not exhaustive. Any frontier/high-parameter model qualifies → proceed.
+**Authoring modes need a planning model.** Author (`/case <description>`), Decomposition, and Refine create or modify bd issues. Before drafting, decomposing, or writing anything to bd, run this gate:
 
-If an authoring mode is requested and you are a **cheap/fast-tier model** (or unsure), **STOP**. Do not draft, decompose, or write to bd. Reply only:
+1. **Read your exact model ID** from the session environment / system prompt — it states one (e.g. `The exact model ID is claude-haiku-4-5`).
+2. **Emit one line, verbatim, before anything else:** `model-guard: id=<exact-id> tier=<planning|budget|unsure>`.
+3. **Classify by the ID, not by self-assessed capability:**
+   - **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`, `small`, or `nano`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class).
+   - **planning** — the ID is a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or is a Gemini Pro-class / equivalent high-tier model.
+   - **unsure** — anything you cannot positively place in the planning list.
+4. **Proceed only on `tier=planning`.** On `budget` **or** `unsure`, **STOP** — do not draft, decompose, or write to bd. Reply only:
 
 > `/case` must run on a planning model. You're on `<model>`. Switch to one (e.g. via `/model`), then run `/case` again.
 
-A `--id` whose story carries `needs-refinement` would enter Refine (an authoring mode). On a budget model, render the read-only detail first, then — instead of refining — emit the message above and make no change to the story.
+Capability is not the gate — the model ID is. Never reclassify a `budget` or `unsure` model as `planning` because the task looks easy or you judge yourself able; "I can handle this" is not a reason to proceed.
+
+A `--id` whose story carries `needs-refinement` would enter Refine (an authoring mode). On a `budget` or `unsure` model, render the read-only detail first, then — instead of refining — run the gate above, emit the stop message, and make no change to the story.
 
 ---
 

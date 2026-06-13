@@ -9,6 +9,14 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+### Fixed
+- `/case` (`1.1.0` → `1.1.1`) — the Model Guard now reliably stops authoring on a budget
+  model. The gate anchors to the session's exact model ID (not self-assessed capability),
+  requires emitting a `model-guard: id=… tier=…` line before any authoring, and proceeds only
+  on a positively-confirmed planning tier — `budget` **or** `unsure` resolves to STOP. Removes
+  the "any frontier/high-parameter model qualifies → proceed" wording that let a budget model
+  rationalize past the guard. Read-only Board/Detail still run on any tier.
+
 ## [1.1.0] - 2026-06-13
 
 Plugin & marketplace entry `case-solvers` `1.0.0` → `1.1.0`.
