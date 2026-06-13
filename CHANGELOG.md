@@ -9,6 +9,10 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-13
+
+Plugin & marketplace entry `case-solvers` `1.1.0` → `1.2.0`.
+
 ### Added
 - `/evaluate` (`1.0.0` → `1.1.0`) — new `--skip-review` flag: `/evaluate --skip-review <id>`
   merges a `needs-review` story straight to `main` (close, unblock dependents, drop the worktree —
