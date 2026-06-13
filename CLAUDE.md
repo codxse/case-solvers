@@ -1,8 +1,12 @@
 # Case Solvers — a Claude Code plugin marketplace
 
 This repo ships Claude Code **plugins**, not an application. The "source" is prompt files
-(`SKILL.md`), so there is no build or test suite — verifying a change means reading the prompt
-and the `CHANGELOG.md`, then running the skill.
+(`SKILL.md`), so there is no unit-test suite — verifying a change usually means reading the prompt
+and the `CHANGELOG.md`, then running the skill. The exception is behavioral guards that must hold
+on a budget model: `plugins/case-solvers/tests/model-guard.sh` runs `/case` on Haiku headless
+across multiple trials (including override-injection descriptions) and asserts the model-tier
+guard stops it. It calls the real model, so it's slow and probabilistic — run it when changing the
+`/case` Model Guard.
 
 ## What this is
 
