@@ -9,6 +9,32 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-06-14
+
+Plugin & marketplace entry `case-solvers` `2.1.0` → `2.2.0`; `writing-claude-md` `1.0.0` → `1.1.0`.
+
+**Dual-host: the same skills now run on OpenAI Codex as well as Claude Code.** Codex's plugin layout
+mirrors Claude's, so the `skills/<name>/SKILL.md` tree is shared verbatim — no duplication, no
+symlinks. Support is purely additive packaging plus a Model Guard that recognizes Codex frontier IDs.
+
+### Added
+- **Codex plugin manifests** — `plugins/case-solvers/.codex-plugin/plugin.json` and
+  `plugins/writing-claude-md/.codex-plugin/plugin.json`, each pointing at the shared `./skills/` tree
+  alongside the existing `.claude-plugin/plugin.json`.
+- **Codex marketplace** — `.agents/plugins/marketplace.json` publishing both plugins to Codex
+  (`source`/`policy` schema), mirroring `.claude-plugin/marketplace.json`.
+- **Codex invocation policy** — `agents/openai.yaml` (`policy.allow_implicit_invocation: false`) in
+  the `case`, `solve`, and `evaluate` skills, the Codex equivalent of Claude's
+  `disable-model-invocation: true`. These stay explicit-only (slash / `$skill`); `board` and `refine`
+  remain implicitly invocable.
+
+### Changed
+- `/case` Model Guard (`v2.0.1` → `v2.1.0`) and `/refine` Model Guard (`v1.0.0` → `v1.1.0`): the
+  planning tier now recognizes frontier GPT-5-class IDs (e.g. `gpt-5.5`, `gpt-5.5-high`) so `/case`
+  and `/refine` run on a Codex frontier model. `gpt-5-mini`/`gpt-5-nano` classify as budget, and a
+  budget marker now explicitly outranks a planning marker on ambiguous IDs. `/solve` is unchanged —
+  it runs on any model tier, as before.
+
 ## [2.1.0] - 2026-06-14
 
 Plugin & marketplace entry `case-solvers` `2.0.0` → `2.1.0`.

@@ -1,0 +1,7 @@
+# Codex invocation policy for /solve — mirrors `disable-model-invocation: true`
+# in SKILL.md (Claude Code). Side-effecting (writes code in a worktree+branch):
+# explicit only, never auto-fired mid-conversation. Runs on any model tier.
+interface:
+  display_name: "Solve"
+policy:
+  allow_implicit_invocation: false

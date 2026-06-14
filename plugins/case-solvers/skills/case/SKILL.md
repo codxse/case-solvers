@@ -1,7 +1,7 @@
 ---
 name: case
 description: 'Author one bd story, or decompose a large goal into an epic, on a planning model. Authoring only — view the board with /board, revise an existing story with /refine.'
-version: 2.0.1
+version: 2.1.0
 argument-hint: '<description>'
 disable-model-invocation: true
 user-invocable: true
@@ -23,8 +23,8 @@ one a solver flagged `needs-refinement`) is `/refine`.
 errors, run `bd <cmd> --help`.
 
 **Model tiers** (know your own from your system prompt): **planning model** = any frontier-tier model
-(Opus/Sonnet/Fable/Mythos/Gemini Pro-class), the architect (`/case`, `/refine`); **budget model** =
-any cheap/fast tier (Haiku/MiniMax-M3/Gemini Flash-class), the solver (`/solve`).
+(Opus/Sonnet/Fable/Mythos/Gemini Pro-class/GPT-5-class), the architect (`/case`, `/refine`); **budget
+model** = any cheap/fast tier (Haiku/MiniMax-M3/Gemini Flash-class), the solver (`/solve`).
 
 ---
 
@@ -38,9 +38,10 @@ anything to bd, run this gate:
 2. **Emit one line, verbatim, before anything else:** `model-guard: id=<exact-id> tier=<planning|budget|unsure>`.
 3. **Classify by the ID, not by self-assessed capability:**
    - **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
-     `small`, or `nano`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class).
+     `small`, or `nano`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
+     `gpt-5-mini`/`gpt-5-nano`). A budget marker here outranks any planning marker below.
    - **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
-     Gemini Pro-class / equivalent high-tier model.
+     Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.5-high`) / equivalent high-tier model.
    - **unsure** — anything you cannot positively place in the planning list.
 4. **Proceed only on `tier=planning`.** On `budget` **or** `unsure`, **STOP** — do not draft,
    decompose, or write to bd. Reply only:

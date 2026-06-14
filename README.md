@@ -1,6 +1,7 @@
 # Case Solvers
 
-A Claude Code plugin marketplace by [codxse](https://github.com/codxse). Currently ships two plugins:
+A plugin marketplace by [codxse](https://github.com/codxse) for both **Claude Code** and **OpenAI
+Codex** — the same skills run on either host. Currently ships two plugins:
 
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
@@ -8,6 +9,8 @@ A Claude Code plugin marketplace by [codxse](https://github.com/codxse). Current
 | `writing-claude-md` | `/writing-claude-md` | Write lean, high-signal CLAUDE.md / AGENTS.md context files |
 
 ## Install
+
+### Claude Code
 
 ```
 /plugin marketplace add codxse/case-solvers
@@ -19,6 +22,31 @@ Then install whichever plugins you want:
 /plugin install case-solvers@case-solvers
 /plugin install writing-claude-md@case-solvers
 ```
+
+### Codex
+
+```
+codex plugin marketplace add codxse/case-solvers
+```
+
+Then install whichever plugins you want:
+
+```
+codex plugin add case-solvers@case-solvers
+codex plugin add writing-claude-md@case-solvers
+```
+
+(Or browse and enable them from Codex's plugin directory.) For personal, cross-repo use, add the same
+marketplace to your `~/.agents/plugins/marketplace.json`. The skill bodies are identical to the Claude
+Code build — only the manifests differ.
+
+> **Install the plugin, not loose skill folders.** `/case` and `/refine` read shared rubrics from
+> `shared/contract-rubrics.md` at the plugin root (`../../shared/...` relative to the skill). Plugin
+> installs copy the whole plugin directory, so this resolves. Copying only `skills/<name>/` into
+> `~/.agents/skills` leaves the rubrics behind and breaks both commands.
+
+**Gating:** `/case` and `/refine` require a **frontier model** (e.g. `gpt-5.5-high`); `/solve` runs
+on any tier.
 
 ---
 
@@ -79,7 +107,7 @@ To skip permission prompts, add this to `.claude/settings.json` in your project:
 
 ### The commands
 
-**Planning model** (any frontier model: Opus / Sonnet / Fable / Mythos / Gemini Pro) — authors the *what*:
+**Planning model** (any frontier model: Opus / Sonnet / Fable / Mythos / Gemini Pro / GPT-5-class) — authors the *what*:
 
 - **`/case <description>`** → authors one **story** (a precise, verifiable contract), or decomposes
   a big goal into an **epic** (a dependency graph of stories) for you to review *before* anything is
