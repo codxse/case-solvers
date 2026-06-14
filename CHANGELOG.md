@@ -9,6 +9,12 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+### Changed
+- `/case` Environment Guard (`v2.0.0` → `v2.0.1`): dropped the dangling `(see README → Requirements)`
+  pointer. The skill runs from the plugin cache inside repos that don't carry the plugin README, so
+  the reference was unreachable there. The guard now states the bd requirement on its own; the
+  `.beads/`-absent → `bd init`-and-continue behavior and "Run Second" run-order are unchanged.
+
 ## [2.0.0] - 2026-06-14
 
 Plugin & marketplace entry `case-solvers` `1.2.2` → `2.0.0`.
