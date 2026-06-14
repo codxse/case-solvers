@@ -1,7 +1,7 @@
 ---
 name: evaluate
-description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (merge to main, close, unblock dependents) or request changes (back to /solve or /case). --skip-review merges without opening the diff or asking a verdict.'
-version: 1.1.0
+description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (merge to main, close, unblock dependents) or request changes (back to /solve or /refine). --skip-review merges without opening the diff or asking a verdict.'
+version: 1.1.1
 argument-hint: '[--skip-review] [<story-id>]'
 disable-model-invocation: true
 user-invocable: true
@@ -37,7 +37,7 @@ Ask plainly: **approve & merge**, or **request changes**? Do not push an opinion
 1. Merge `bd/<id>` into `main`.
 2. **Merge conflict?** Apply the confidence gate:
    - **Clear & safe** — purely additive/textual, both sides' intent preserved, AND the branch's tests stay green after resolving → auto-resolve. The resolution is part of the merge the user just approved; show it.
-   - **Ambiguous** — both sides changed the same logic/value differently, or resolving means one story's AC must lose, or tests go red → **do not guess.** Present it decision-ready: the conflict, the two intents, the options, your recommendation. Let the human decide, then apply. (A semantic conflict often means the decomposition let two stories collide — worth flagging for `/case`.)
+   - **Ambiguous** — both sides changed the same logic/value differently, or resolving means one story's AC must lose, or tests go red → **do not guess.** Present it decision-ready: the conflict, the two intents, the options, your recommendation. Let the human decide, then apply. (A semantic conflict often means the decomposition let two stories collide — worth flagging for `/refine`.)
 3. After a clean merge: `bd close <id>` (this unblocks any dependents — recompute and report which stories are now READY), remove the `needs-review` label, and remove the worktree + delete branch `bd/<id>`.
 4. Report: merged, closed, and the newly-unblocked stories (`/solve <id>` to pick one).
 
@@ -45,9 +45,9 @@ Ask plainly: **approve & merge**, or **request changes**? Do not push an opinion
 Ask which kind of change, because they route differently:
 
 - **Implementation is wrong (most common)** → the contract is fine, the code isn't. Record the feedback as a `bd comment`, remove `needs-review`, set the story back to `in_progress`, and **keep** the branch + worktree so `/solve` resumes on it. Tell the user: `/solve <id>` to redo with your feedback.
-- **The contract itself is wrong** → the spec needs rethinking. `bd label add <id> needs-refinement` + a `bd comment` with the feedback, remove `needs-review`. Tell the user: `/case --id <id>` to refine the contract first, then `/solve <id>`.
+- **The contract itself is wrong** → the spec needs rethinking. `bd label add <id> needs-refinement` + a `bd comment` with the feedback, remove `needs-review`. Tell the user: `/refine <id>` to refine the contract first, then `/solve <id>`.
 
-Either way the feedback lives as a durable per-story comment, readable later via `/case --id <id>`.
+Either way the feedback lives as a durable per-story comment, readable later via `/board <id>`.
 
 ### 4c. Skip-review warning (only when `--skip-review` was used)
 The merge happened without a human reading the diff. After 4a's merge/close/unblock, the report's headline is a clear warning — always shown, not a prompt, nothing to dismiss:
@@ -69,4 +69,4 @@ Then still report the newly-unblocked stories (`/solve <id>` to pick one), as 4a
 | request impl change | `bd comment` + `bd update <id> --status in_progress` + `bd label remove <id> needs-review` (keep branch) |
 | contract wrong | `bd label add <id> needs-refinement` + `bd comment` + `bd label remove <id> needs-review` |
 
-Single-writer discipline: `/evaluate` is the only skill that merges to `main` and closes a story. It never edits the contract body (`/case`) and never writes implementation code (`/solve`).
+Single-writer discipline: `/evaluate` is the only skill that merges to `main` and closes a story. It never edits the contract body (`/case` / `/refine`) and never writes implementation code (`/solve`).

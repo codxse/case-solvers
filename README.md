@@ -4,7 +4,7 @@ A Claude Code plugin marketplace by [codxse](https://github.com/codxse). Current
 
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
-| `case-solvers` | `/case`, `/solve`, `/evaluate` | bd-backed, parallel-capable workflow: author stories/epics → solve in worktrees → review & merge |
+| `case-solvers` | `/case`, `/refine`, `/board`, `/solve`, `/evaluate` | bd-backed, parallel-capable workflow: author stories/epics → solve in worktrees → review & merge |
 | `writing-claude-md` | `/writing-claude-md` | Write lean, high-signal CLAUDE.md / AGENTS.md context files |
 
 ## Install
@@ -28,7 +28,7 @@ A capable **planning model** acts as the architect (`/case`) and defines *what* 
 cheap **budget model** acts as the solver (`/solve`) and does *how*; you review and merge
 (`/evaluate`). Work lives in [**bd** (Beads)](https://github.com/steveyegge/beads) — a
 git-backed, dependency-aware issue tracker — so you can stockpile many tasks and solve any of
-them anytime, in parallel. **bd stays hidden**: you only ever type the three commands.
+them anytime, in parallel. **bd stays hidden**: you only ever type the slash commands, never `bd`.
 
 **Requirements:** the `bd` (Beads) CLI must be installed and on your `PATH` — `brew install
 beads` (or `npm i -g @beads/bd`, or `go install github.com/steveyegge/beads@latest`). The
@@ -75,26 +75,39 @@ To skip permission prompts, add this to `.claude/settings.json` in your project:
 }
 ```
 
-`allowedTools` covers `bd` and `code` commands. `permissions.allow` silently allows all read-only shell operations (file inspection, grep, git reads, bd queries) and the `Read` tool so `/case` and `/solve` never prompt for codebase exploration.
+`allowedTools` covers `bd` and `code` commands. `permissions.allow` silently allows all read-only shell operations (file inspection, grep, git reads, bd queries) and the `Read` tool so the skills never prompt for codebase exploration.
 
-### The three commands
+### The commands
 
-- **`/case`** — planning model (any frontier model: Opus / Sonnet / Fable / Mythos / Gemini Pro).
-  - `/case <description>` → authors one **story** (a precise, verifiable contract), or
-    decomposes a big goal into an **epic** (a dependency graph of stories) for you to review
-    *before* anything is created.
-  - `/case` → the **board**: backlog, in progress, done & awaiting merge, blocked.
-  - `/case --id <id>` → one story's contract + its comments.
-- **`/solve <id>`** — budget model (Haiku / Gemini Flash / MiniMax-M3). Refuses with a reason
-  if the story is still blocked; otherwise claims it, works in its own git **worktree+branch**
-  test-first, and stops at *done · review*. Never merges.
-- **`/evaluate <id>`** — opens the branch in **VSCode** so you review the diff, then enacts
-  your verdict: **approve** → merge to `main`, close the story, unblock dependents;
-  **request changes** → feedback goes back to `/solve` (or `/case`).
+**Planning model** (any frontier model: Opus / Sonnet / Fable / Mythos / Gemini Pro) — authors the *what*:
+
+- **`/case <description>`** → authors one **story** (a precise, verifiable contract), or decomposes
+  a big goal into an **epic** (a dependency graph of stories) for you to review *before* anything is
+  created. Authoring only.
+- **`/refine <id>`** → revises an existing story's contract — applies feedback from a `/solve`
+  spec-gap or an `/evaluate` change-request (or a change you ask for), keeps it WHAT-only, and
+  returns it to ready.
+
+**Any model, read-only** — shows your work:
+
+- **`/board`** → the **board**: backlog, in progress, done & awaiting merge, blocked. `/board <id>`
+  shows one story's contract + its comments.
+
+**Budget model** (Haiku / Gemini Flash / MiniMax-M3) — does the *how*:
+
+- **`/solve <id>`** → refuses with a reason if the story is still blocked; otherwise claims it,
+  works in its own git **worktree+branch** test-first, and stops at *done · review*. Never merges.
+
+**Review & merge:**
+
+- **`/evaluate <id>`** → opens the branch in **VSCode** so you review the diff, then enacts your
+  verdict: **approve** → merge to `main`, close the story, unblock dependents; **request changes** →
+  feedback goes back to `/solve` (or `/refine`).
 
 ### Typical flow
 
-1. `/case` to capture stories anytime (or decompose an epic, reviewing the graph first).
+1. `/case <description>` to capture stories anytime (or decompose an epic, reviewing the graph
+   first); `/board` to see what's queued.
 2. On a budget model, `/solve <id>` the ones you want — run several in separate sessions to
    work in parallel; each gets an isolated worktree.
 3. `/evaluate <id>` to review in VSCode and merge. Approving unblocks dependent stories.
@@ -112,7 +125,7 @@ Stored in **your working project** (not this repo):
 | Feedback / refine notes | bd comments on a story | Per-story review feedback (refine notes + your verdicts). |
 | Work under review | git worktrees on `bd/<id>` | Isolated branch per story awaiting `/evaluate`. |
 
-Read them via `/case` and `/case --id <id>` — you never need `bd` commands directly.
+Read them via `/board` and `/board <id>` — you never need `bd` commands directly.
 
 ---
 

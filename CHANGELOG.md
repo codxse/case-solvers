@@ -9,6 +9,49 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-06-14
+
+Plugin & marketplace entry `case-solvers` `1.2.2` → `2.0.0`.
+
+**Breaking:** `/case` is now **authoring only** and takes just `<description>`. Its other two modes
+moved to dedicated commands — viewing the board / one story is **`/board`** (new), revising a story
+is **`/refine`** (new). `/case` with no argument now prints a usage hint instead of the board, and
+`/case --id <id>` is gone (use `/board <id>` to view, `/refine <id>` to revise). The split follows
+the read/author fault line the skill already had: read-only modes ran on any tier, authoring needed
+a planning model.
+
+### Added
+- New skill **`/board`** (`v1.0.0`) — read-only render of the bd backlog as a status board, or one
+  story by id (`/board <id>`). Runs on **any model tier** (no planning model) and is
+  **model-invocable**, so plain-language asks ("show me story 5", "list all stories") route to it.
+  This is the old `/case` Board + Detail modes lifted out.
+- New skill **`/refine`** (`v1.0.0`) — revise an existing story's contract on a **planning model**:
+  apply a `/solve` spec-gap or `/evaluate` change-request (or a user edit), stay WHAT-only, and
+  return the story to ready. Carries the same Model Guard as `/case` (untrusted-input handling
+  included) and is **model-invocable** ("update story 5"). This is the old `/case` Refine mode as
+  its own command.
+- `plugins/case-solvers/shared/contract-rubrics.md` — the contract rubrics (Authoring principles,
+  Problem Types, Budget-Solver Fit, Verification Mode, AC Quality Rubric, Pre-write Guard, Output
+  Format) extracted to one file that both `/case` and `/refine` load after their Model Guard passes.
+  Single source of truth, no duplication across the two authoring skills. Each skill's Model Guard
+  stays inline — it must run before anything is read.
+
+### Changed
+- `/case` (`1.1.4` → `2.0.0`) — reduced to its one job: author a new story or epic. Board, Detail,
+  Refine, the mode-dispatch table, and most of the bd command map are gone (moved to `/board` and
+  `/refine`); the Model Guard sheds its read-only carve-outs since every `/case` run now authors.
+  Stays slash-only (`disable-model-invocation`) — authoring is a deliberate act tied to a model
+  switch, and a fuzzy "make a story" trigger would false-positive during ordinary design talk.
+- `/solve` (`1.0.0` → `1.0.1`) and `/evaluate` (`1.1.0` → `1.1.1`) — pointers follow the new
+  commands: a spec-gap / contract-wrong handoff now points at `/refine <id>`; "view the story" and
+  "readable later" point at `/board` / `/board <id>`.
+- `model-guard.sh` now exercises both authoring guards — it adds `/refine <id>` trials alongside
+  `/case <description>`. `/refine`'s Model Guard runs before its environment guard, so a budget
+  model must emit the planning-model stop even with no backlog present; the harness asserts that.
+- `CLAUDE.md` / `README.md` updated for the five-command surface and the invocation policy
+  (slash-only for the tier-gated/side-effecting commands; model-invocable for read-only `/board`
+  and id-scoped `/refine`).
+
 ## [1.2.2] - 2026-06-14
 
 Plugin & marketplace entry `case-solvers` `1.2.1` → `1.2.2`.

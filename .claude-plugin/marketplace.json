@@ -1,17 +1,17 @@
 {
   "name": "case-solvers",
-  "description": "Claude Code plugins by nadiar: workflow skills (/case, /solve) and context-writing helpers.",
+  "description": "Claude Code plugins by nadiar: workflow skills (/case, /refine, /board, /solve, /evaluate) and context-writing helpers.",
   "owner": { "name": "nadiar", "email": "codex@nadiar.id" },
   "plugins": [
     {
       "name": "case-solvers",
       "source": "./plugins/case-solvers",
-      "description": "A bd-backed, parallel-capable workflow: /case authors stories/epics in Beads, /solve implements one in an isolated worktree, /evaluate merges after human review. Requires the bd (Beads) CLI.",
-      "version": "1.2.2",
+      "description": "A bd-backed, parallel-capable workflow: /case authors stories/epics in Beads, /refine revises a story, /board shows the backlog, /solve implements one in an isolated worktree, /evaluate merges after human review. Requires the bd (Beads) CLI.",
+      "version": "2.0.0",
       "author": { "name": "nadiar", "email": "codex@nadiar.id" },
       "license": "MIT",
       "category": "workflow",
-      "keywords": ["workflow", "planning", "architect", "case", "solve", "evaluate", "beads", "bd", "epic", "parallel"]
+      "keywords": ["workflow", "planning", "architect", "case", "refine", "board", "solve", "evaluate", "beads", "bd", "epic", "parallel"]
     },
     {
       "name": "writing-claude-md",
