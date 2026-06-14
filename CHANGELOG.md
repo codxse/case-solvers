@@ -41,13 +41,23 @@ a planning model.
   Refine, the mode-dispatch table, and most of the bd command map are gone (moved to `/board` and
   `/refine`); the Model Guard sheds its read-only carve-outs since every `/case` run now authors.
   Stays slash-only (`disable-model-invocation`) — authoring is a deliberate act tied to a model
-  switch, and a fuzzy "make a story" trigger would false-positive during ordinary design talk.
+  switch, and a fuzzy "make a story" trigger would false-positive during ordinary design talk. The
+  **Authoring: Story vs Epic** section was then compressed ~30% (the inline problem-type list and
+  "both modes" restatement dropped — both already covered by the shared rubrics it points to); the
+  new `authoring-format.sh` harness confirms a planning model still follows it (Story vs Epic
+  branching + Output Format) across trials.
 - `/solve` (`1.0.0` → `1.0.1`) and `/evaluate` (`1.1.0` → `1.1.1`) — pointers follow the new
   commands: a spec-gap / contract-wrong handoff now points at `/refine <id>`; "view the story" and
   "readable later" point at `/board` / `/board <id>`.
-- `model-guard.sh` now exercises both authoring guards — it adds `/refine <id>` trials alongside
-  `/case <description>`. `/refine`'s Model Guard runs before its environment guard, so a budget
-  model must emit the planning-model stop even with no backlog present; the harness asserts that.
+- Test harness grew a positive path and got more robust. `model-guard.sh` (the budget-STOP
+  direction) now exercises both authoring guards — `/refine <id>` trials alongside
+  `/case <description>` (`/refine`'s Model Guard runs before its environment guard, so a budget
+  model must emit the planning-model stop even with no backlog; the harness asserts that). New
+  `authoring-format.sh` covers the PLANNING-PROCEED direction: it runs `/case` on a planning model
+  and grades the drafted `.case.md` against the Output Format and the Story-vs-Epic branch. Shared
+  `lib.sh` auto-syncs the working tree into the active install before each run (no more manual
+  `cp` into the cache) and adds `infra_error` detection so a mid-run session/rate limit or empty
+  response scores **inconclusive (exit 2)**, never a false guard/format FAIL.
 - `CLAUDE.md` / `README.md` updated for the five-command surface and the invocation policy
   (slash-only for the tier-gated/side-effecting commands; model-invocable for read-only `/board`
   and id-scoped `/refine`).

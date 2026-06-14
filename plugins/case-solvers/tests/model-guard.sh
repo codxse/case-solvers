@@ -20,24 +20,26 @@
 # Exit 0 only when every trial passes.
 #
 # NOTE: headless `claude -p` loads the *installed* plugin copy (under
-# ~/.claude/plugins/cache/...), not this working tree. When iterating on the
-# skill prose, sync your edit into the active cache before re-running, e.g.:
-#   cp skills/case/SKILL.md \
-#      ~/.claude/plugins/cache/case-solvers/case-solvers/<ver>/skills/case/SKILL.md
-# After the change is published (committed + plugin reinstalled), the cache
-# tracks it and no sync is needed.
+# ~/.claude/plugins/cache/...), not this working tree. The harness overlays this
+# checkout onto the active install automatically (sync_plugin, in lib.sh) before
+# the first trial, so your edits are exercised without any manual `cp`. Pass
+# --no-sync to skip that and test exactly what's installed.
 
 set -u
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 TRIALS=3
 MODEL=haiku
 VERBOSE=0
-while getopts "n:m:v" opt; do
-  case "$opt" in
-    n) TRIALS=$OPTARG ;;
-    m) MODEL=$OPTARG ;;
-    v) VERBOSE=1 ;;
-    *) echo "usage: $0 [-n TRIALS] [-m MODEL] [-v]" >&2; exit 2 ;;
+SYNC=1
+args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n) TRIALS=$2; shift 2 ;;
+    -m) MODEL=$2; shift 2 ;;
+    -v) VERBOSE=1; shift ;;
+    --no-sync) SYNC=0; shift ;;
+    *) echo "usage: $0 [-n TRIALS] [-m MODEL] [-v] [--no-sync]" >&2; exit 2 ;;
   esac
 done
 
@@ -68,14 +70,24 @@ REFINE_CMDS=(
 STOP_RE='planning model'
 PASS=0
 FAIL=0
+ERR=0
 FAILLOG=$(mktemp)
 
+# Returns: 0=PASS, 1=FAIL, 2=ERROR (trial never reached the model — inconclusive).
 run_trial() {
   local cmd="$1" dir out
   dir=$(mktemp -d)
   ( cd "$dir" && git init -q )
   out=$( cd "$dir" && timeout 240 claude -p "$cmd" \
            --model "$MODEL" --permission-mode acceptEdits 2>&1 )
+
+  local infra
+  if infra=$(infra_error "$out"); then
+    rm -rf "$dir"
+    { printf '\n--- ERROR [%s] %s\n    %s\n' "$MODEL" "$cmd" "$infra"; } >>"$FAILLOG"
+    [ "$VERBOSE" -eq 1 ] && printf '  ERROR: %s\n' "$infra"
+    return 2
+  fi
 
   local authored=0 reason=""
   # Authored a contract → the guard failed, regardless of what was printed.
@@ -104,17 +116,23 @@ run_trial() {
   return 1
 }
 
+[ "$SYNC" -eq 1 ] && { sync_plugin || exit 1; }
+
 echo "model-guard: model=$MODEL trials/invocation=$TRIALS  /case=${#DESCRIPTIONS[@]} /refine=${#REFINE_CMDS[@]}"
 
 run_set() {  # $1=label; remaining args = full slash invocations to trial
   local label="$1"; shift
-  local inv i
+  local inv i rc
   for inv in "$@"; do
     printf '%s: %s\n' "$label" "$inv"
     for i in $(seq 1 "$TRIALS"); do
       printf '  trial %d/%d ... ' "$i" "$TRIALS"
-      if run_trial "$inv"; then PASS=$((PASS+1)); [ "$VERBOSE" -eq 0 ] && echo PASS
-      else FAIL=$((FAIL+1)); [ "$VERBOSE" -eq 0 ] && echo FAIL; fi
+      run_trial "$inv"; rc=$?
+      case "$rc" in
+        0) PASS=$((PASS+1)); [ "$VERBOSE" -eq 0 ] && echo PASS ;;
+        2) ERR=$((ERR+1));  [ "$VERBOSE" -eq 0 ] && echo ERROR ;;
+        *) FAIL=$((FAIL+1)); [ "$VERBOSE" -eq 0 ] && echo FAIL ;;
+      esac
     done
   done
 }
@@ -126,13 +144,17 @@ for desc in "${DESCRIPTIONS[@]}"; do CASE_CMDS+=("/case $desc"); done
 run_set "case"   "${CASE_CMDS[@]}"
 run_set "refine" "${REFINE_CMDS[@]}"
 
-TOTAL=$((PASS+FAIL))
+TOTAL=$((PASS+FAIL+ERR))
 echo
-echo "result: $PASS/$TOTAL passed"
+echo "result: $PASS/$TOTAL passed, $FAIL failed, $ERR inconclusive (infra)"
 if [ "$FAIL" -gt 0 ]; then
-  cat "$FAILLOG"
-  rm -f "$FAILLOG"
+  cat "$FAILLOG"; rm -f "$FAILLOG"
   exit 1
+fi
+if [ "$ERR" -gt 0 ]; then
+  cat "$FAILLOG"; rm -f "$FAILLOG"
+  echo "no guard FAILs, but $ERR trial(s) never reached the model — re-run after the limit/outage clears."
+  exit 2
 fi
 rm -f "$FAILLOG"
 echo "all trials respected the guard."

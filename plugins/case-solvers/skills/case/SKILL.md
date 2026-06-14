@@ -79,25 +79,20 @@ Invoked as `/case <description>` — the whole argument is the description to au
 
 ## Authoring: Story vs Epic
 
-After the guards pass, **read the shared rubrics** — `shared/contract-rubrics.md` at this plugin's root
-(from this skill folder: `../../shared/contract-rubrics.md`). It holds the Authoring principles,
-Problem Types, Budget-Solver Fit, Verification Mode, AC Quality Rubric, Pre-write Guard, and Output
-Format that every contract below must satisfy.
+After the guards pass, **read the shared rubrics** (`../../shared/contract-rubrics.md`): Authoring
+principles, Problem Types, Budget-Solver Fit, Verification Mode, AC Quality Rubric, Pre-write Guard,
+and Output Format — every contract below must satisfy them.
 
-From the user description, classify problem type (Feature / Bugfix / Refactor / Design / Investigation),
-draft the contract, grill on scope-affecting unknowns one at a time (each with a recommended answer;
-explore the codebase instead of asking when the answer is there), then judge size against
-**Budget-Solver Fit**:
+Then classify the problem type and draft inference-first: explore the codebase rather than ask when the
+answer is there (budget ~3 Read + 2 Grep when the user names an artifact); settle scope-affecting
+unknowns one at a time, each with a recommended answer; verify every name the draft keeps (mandatory,
+unbudgeted). Run the Pre-write Guard and AC Quality Rubric on every story before it enters bd. Then
+judge size against **Budget-Solver Fit**:
 
-- **Fits one budget pass → Story mode.** Draft the full contract (Output Format), apply the Pre-write
-  Guard and AC Quality Rubric, then follow the **Staging Loop** to write, iterate, and commit.
-- **Too large → Epic mode.** Decompose into ordered, independently-solvable stories. This is **Gate 0**
-  — see Decomposition.
-
-Drafting rules (both modes): inference-first; if the user names a concrete artifact, targeted
-exploration is allowed (budget ~3 Read + 2 Grep) to make Context/AC concrete — but verifying any
-artifact the draft ends up naming is mandatory and unbudgeted (Grounded names). Run the Pre-write Guard
-and AC Quality Rubric on every story before it goes into bd.
+- **Fits one budget pass → Story mode** — draft the full Output Format, then the **Staging Loop** to
+  write, iterate, commit.
+- **Too large → Epic mode** — decompose into ordered, independently-solvable stories (**Gate 0**, see
+  Decomposition).
 
 ---
 
