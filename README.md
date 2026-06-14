@@ -104,16 +104,60 @@ To skip permission prompts, add this to `.claude/settings.json` in your project:
   verdict: **approve** → merge to `main`, close the story, unblock dependents; **request changes** →
   feedback goes back to `/solve` (or `/refine`).
 
-### Typical flow
+### Typical flow — worked examples
 
-1. `/case <description>` to capture stories anytime (or decompose an epic, reviewing the graph
-   first); `/board` to see what's queued.
-2. On a budget model, `/solve <id>` the ones you want — run several in separate sessions to
-   work in parallel; each gets an isolated worktree.
-3. `/evaluate <id>` to review in VSCode and merge. Approving unblocks dependent stories.
+You are the scheduler: you pick what to author, what to solve, and what to merge. The loop is
+**author → solve → evaluate**, with `/board` to look at your work any time. Three concrete runs:
 
-You are the scheduler: you pick what to solve and what to merge. `bd` enforces dependencies (a
-blocked story is refused with a reason) and the agents stay guardrailed workers.
+#### Author one story
+
+On a planning model, capture a task as a precise contract:
+
+```
+/case add a forgot-password reset email flow
+```
+
+You see: the skill drafts the contract to a transient `.case.md` staging file, may ask one or two
+scoping questions (each with a recommended answer), then waits. When you say *"looks good"*, it
+creates the story and replies with the new id and the next step:
+
+> Created story **c-fp**. Run `/solve c-fp` on a budget model to build it, or `/board c-fp` to
+> re-read the contract.
+
+At any point, `/board` shows the whole backlog; `/board c-fp` shows just this story.
+
+#### Refine a story back to ready
+
+A story comes back marked `needs-refinement` — a `/solve` hit a spec gap, or `/evaluate` requested a
+change. Revise the *contract* (not the code) on a planning model:
+
+```
+/refine c-fp
+```
+
+You see: the skill reads the reviewer's feedback from the story's comments, rewrites the contract to
+close the gap, and returns the story to ready — then it points you back to `/solve c-fp`.
+
+#### Decompose a large goal into an epic
+
+When a goal is too big for one budget pass, `/case` switches to epic mode and reviews the breakdown
+with you *before* creating anything:
+
+```
+/case ship SSO across the whole app
+```
+
+You see: the skill drafts a decomposition doc to `.case.md` — an ordered set of stories with the
+dependency graph between them (Gate 0). You edit it or approve it; only on your *"go ahead"* does it
+create the stories and links in bd, then reports the new ids. `/board` now shows the epic and which
+stories block which.
+
+#### Then: solve and evaluate
+
+On a budget model, `/solve <id>` each story you want — run several in separate sessions to work in
+parallel, each in its own isolated worktree+branch. `/evaluate <id>` opens the branch in VSCode,
+merges to `main` on approve, and unblocks any dependents. `bd` enforces dependencies throughout (a
+blocked story is refused with a reason), so the agents stay guardrailed workers.
 
 ### Runtime artifacts
 
