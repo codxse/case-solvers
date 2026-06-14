@@ -10,6 +10,12 @@ versions (shown in parentheses where relevant).
 ## [Unreleased]
 
 ### Changed
+- `/evaluate` (`v1.1.1` → `v1.2.0`): replaced `--skip-review` with three composable flags.
+  `--approve` merges without opening the VSCode diff; `--request-changes` routes straight to the
+  send-back path (still prompts for impl vs. contract); `--note <text>` attaches a `bd comment` to
+  the story and is orthogonal — works with either flag or the full interactive flow. Removed the
+  post-merge `⚠` warning: `--approve` is an affirmative signal, not negligence, so no warning is
+  warranted.
 - `/case` Environment Guard (`v2.0.0` → `v2.0.1`): dropped the dangling `(see README → Requirements)`
   pointer. The skill runs from the plugin cache inside repos that don't carry the plugin README, so
   the reference was unreachable there. The guard now states the bd requirement on its own; the

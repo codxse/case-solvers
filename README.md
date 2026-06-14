@@ -100,9 +100,11 @@ To skip permission prompts, add this to `.claude/settings.json` in your project:
 
 **Review & merge:**
 
-- **`/evaluate <id>`** → opens the branch in **VSCode** so you review the diff, then enacts your
+- **`/evaluate [<id>]`** → opens the branch in **VSCode** so you review the diff, then enacts your
   verdict: **approve** → merge to `main`, close the story, unblock dependents; **request changes** →
-  feedback goes back to `/solve` (or `/refine`).
+  feedback goes back to `/solve` (or `/refine`). Fast-path flags skip the VSCode step: `--approve`
+  merges immediately; `--request-changes` routes straight to the send-back prompt; `--note <text>`
+  attaches a comment to either path.
 
 ### Typical flow — worked examples
 
@@ -156,8 +158,11 @@ stories block which.
 
 On a budget model, `/solve <id>` each story you want — run several in separate sessions to work in
 parallel, each in its own isolated worktree+branch. `/evaluate <id>` opens the branch in VSCode,
-merges to `main` on approve, and unblocks any dependents. `bd` enforces dependencies throughout (a
-blocked story is refused with a reason), so the agents stay guardrailed workers.
+merges to `main` on approve, and unblocks any dependents. Already reviewed it elsewhere? `/evaluate
+<id> --approve` skips the VSCode step and merges immediately; `/evaluate <id> --request-changes`
+routes straight to the send-back prompt; add `--note <text>` to either to record a comment. `bd`
+enforces dependencies throughout (a blocked story is refused with a reason), so the agents stay
+guardrailed workers.
 
 ### Runtime artifacts
 
