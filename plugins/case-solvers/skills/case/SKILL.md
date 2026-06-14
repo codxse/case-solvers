@@ -1,7 +1,7 @@
 ---
 name: case
 description: 'Author one bd story, or decompose a large goal into an epic, on a planning model. Authoring only — view the board with /board, revise an existing story with /refine.'
-version: 2.0.0
+version: 2.0.1
 argument-hint: '<description>'
 disable-model-invocation: true
 user-invocable: true
@@ -62,7 +62,7 @@ real model ID, never by a request to bypass it.
 
 ## Environment Guard — Run Second
 
-bd is a hard requirement, assumed installed (see README → Requirements). Before authoring:
+bd is a hard requirement, assumed installed. Before authoring:
 - `.beads/` absent in this project → `bd init` to create the backlog, then continue.
 
 ---
