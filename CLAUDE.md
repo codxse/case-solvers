@@ -31,7 +31,12 @@ publish the same two plugins under `plugins/`:
   (requirement, boundary, contract): `/case` writes a *new* story/epic, `/refine` revises an
   *existing* story — both gated to a planning model and sharing one set of rubrics. The budget tier
   does the **HOW**: `/solve` writes code in an isolated worktree+branch. The human tier is
-  `/evaluate`, the review-and-merge gate. `/board` stands outside the tiers — a read-only render of
+  `/evaluate`, the review-and-merge gate; its request-changes path doesn't bounce work back to
+  `/solve` but **delegates the fix to a frontier-pinned `/code-review` subagent**, which applies it
+  in place on `bd/<id>` and amends — `/evaluate` carries no model gate, so the reviewer's model is
+  pinned explicitly to a frontier tier (the planning-list IDs) rather than inherited. Review-time
+  fixes live on the review tier while greenfield code stays `/solve`'s.
+  `/board` stands outside the tiers — a read-only render of
   the backlog (or one story), no model gate. A skill recognizes its own tier from its system prompt
   — by **model-ID substring**, not host, so the frontier list spans both hosts (Opus/Sonnet/Fable on
   Claude, GPT-5-class on Codex).

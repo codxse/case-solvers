@@ -1,7 +1,7 @@
 ---
 name: solve
 description: 'Implement one bd story by id in an isolated git worktree+branch, ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks.'
-version: 1.0.1
+version: 1.0.2
 argument-hint: '[<story-id>]'
 disable-model-invocation: true
 user-invocable: true
@@ -61,7 +61,7 @@ Check the story's blockers (`bd ready` includes it only if unblocked; else inspe
 ### 3. Claim & branch
 - `bd update <id> --claim --assignee claude` then `--status in_progress` (claiming prevents another parallel session from grabbing the same story).
 - **Fresh story** → create the worktree off local `main`: branch `bd/<id>`, worktree at sibling `../<repo>-worktrees/<id>`. Do all work there.
-- **Resuming after a request-changes** (branch `bd/<id>` already exists) → reuse that worktree; read the latest comment (`bd show <id>` includes comments) for the reviewer's feedback and address exactly that. Don't recreate the branch.
+- **Resuming on an existing branch** (`bd/<id>` already exists — e.g. a contract sent back via `/refine`, or your own earlier in-progress work) → reuse that worktree; read the latest comment (`bd show <id>` includes comments) for the latest direction and address exactly that. Don't recreate the branch. (Implementation-only review fixes no longer come back here — `/evaluate` applies those in place via `/code-review`.)
 - Parallelism = the user runs another `/solve <other-id>` in a separate session; each gets its own worktree.
 
 ### 4. Pre-flight Gate — earn the right to start

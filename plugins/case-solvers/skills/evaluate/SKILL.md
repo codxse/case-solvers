@@ -1,8 +1,8 @@
 ---
 name: evaluate
-description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (merge to main, close, unblock dependents) or request changes (back to /solve or /refine). --approve merges without opening the diff; --request-changes routes straight to the send-back path; --note <text> attaches a comment to either.'
-version: 1.2.0
-argument-hint: '[<story-id>] [--approve] [--request-changes] [--note <text>]'
+description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (merge to main, close, unblock dependents) or request changes. Request changes spawns a frontier-pinned subagent that runs /code-review and applies the fixes in place, shows you the applied diff, and amends bd/<id> only after you confirm; a wrong contract instead routes to /refine. --approve merges without opening the diff; --review [effort] runs the code-review pass straight away (default high); --note <text> steers the review and/or annotates the story.'
+version: 1.3.0
+argument-hint: '[<story-id>] [--approve] [--review [effort]] [--note <text>]'
 disable-model-invocation: true
 user-invocable: true
 ---
@@ -19,13 +19,13 @@ The human review gate. A story finished by `/solve` sits in **`needs-review`** o
 
 | Flags | Action |
 |---|---|
-| `--approve` | Resolve story (step 1), skip steps 2–3, go straight to 4a |
-| `--request-changes` | Resolve story (step 1), skip steps 2–3, go straight to 4b (still prompts for impl vs. contract) |
+| `--approve` | Resolve story (step 1), skip steps 2–3, go straight to 4a (merge) |
+| `--review [effort]` | Resolve story (step 1), skip steps 2–3, go straight to **4b implementation path** — run the `/code-review` pass at `effort` (default `high`) |
 | `--approve --note <text>` | Same as `--approve`; record `<text>` as a `bd comment` before merging |
-| `--request-changes --note <text>` | Same as `--request-changes`; `<text>` pre-fills the feedback — record it as a `bd comment` and skip the "what's the feedback?" prompt, but still ask impl vs. contract |
+| `--review [effort] --note <text>` | Same as `--review`; pass `<text>` to the reviewer as steering ("focus on …") **and** record it as a `bd comment` |
 | neither | Full interactive flow: steps 1 → 2 → 3 → 4a or 4b |
 
-`--note` is orthogonal: it attaches text to the story regardless of which path is taken. 4a's merge-conflict confidence gate applies in all paths — fast-pathing the review does not bypass conflict resolution.
+`effort` is any `/code-review` level (`low`/`medium`/`high`/`max`); omit it for `high`. `--review` always takes the *implementation* path — `/code-review` can't fix a wrong contract, so for that, use the interactive flow (which asks impl vs. contract) or go straight to `/refine`. `--note` is orthogonal: it annotates the story on any path, and additionally steers the reviewer on `--review`. 4a's merge-conflict confidence gate applies in all paths — fast-pathing the verdict does not bypass conflict resolution.
 
 Story id: use the argument if supplied. If omitted but a story was mentioned earlier in this session, use that. If still unknown, go to step 1.
 
@@ -52,15 +52,21 @@ Ask plainly: **approve & merge**, or **request changes**? Do not push an opinion
 4. After a clean merge: `bd close <id>` (this unblocks any dependents — recompute and report which stories are now READY), remove the `needs-review` label, and remove the worktree + delete branch `bd/<id>`.
 5. Report: merged, closed, and the newly-unblocked stories (`/solve <id>` to pick one).
 
-### 4b. Request changes → back to the right owner
+### 4b. Request changes → fix in place via /code-review
 If `--note <text>` was supplied, record it as a `bd comment` now (before asking anything else).
 
 Ask which kind of change, because they route differently:
 
-- **Implementation is wrong (most common)** → the contract is fine, the code isn't. Record the feedback as a `bd comment` (if not already recorded via `--note`), remove `needs-review`, set the story back to `in_progress`, and **keep** the branch + worktree so `/solve` resumes on it. Tell the user: `/solve <id>` to redo with your feedback.
-- **The contract itself is wrong** → the spec needs rethinking. `bd label add <id> needs-refinement` + a `bd comment` with the feedback (if not already recorded via `--note`), remove `needs-review`. Tell the user: `/refine <id>` to refine the contract first, then `/solve <id>`.
+- **Implementation needs work (most common)** → the contract is fine, the code isn't. Don't bounce the story back to `/solve`; fix it in place by delegating the review to a **frontier model**:
+  1. **Spawn the review-and-apply as a subagent with its model pinned to a frontier tier — never the ambient model.** `/evaluate` itself carries no model gate, so the reviewer must be pinned explicitly: a frontier ID (contains `opus`, `sonnet`, `fable`, or `mythos`; on Codex a frontier GPT-5-class — the same list the `/case` Model Guard treats as planning). On Claude Code, set the spawning tool's `model` to `sonnet` or `opus`; on Codex, pin its frontier equivalent. **Never** pin a budget ID (`haiku`/`flash`/`mini`/`lite`/`nano`/…). If no frontier model is available to pin, **stop** and tell the user — do not fall back to a budget reviewer.
+  2. Inside that subagent, run `/code-review <effort> --fix` scoped to the story's worktree (`../<repo>-worktrees/<id>`), handing it the contract as context — the **WHAT** + Acceptance Criteria from `bd show <id>` — as what the diff must satisfy, plus any `--note <text>` as steering ("focus on …"). `<effort>` is the level passed on `--review` (default `high`; in the interactive flow, confirm it, defaulting to `high`). It reviews the `bd/<id>` diff and applies its findings to the worktree in place — **leaving them unstaged/uncommitted.**
+  3. **Confirm before amend — the human reviews the reviewer's work first.** Surface what the subagent changed: its findings and the **applied diff** (the worktree changes it just made, e.g. `git -C ../<repo>-worktrees/<id> diff`), and re-open the worktree in VSCode if the user wants. Then ask plainly: **amend these into `bd/<id>`?** Do not amend until the human says so. If they decline → don't amend; let them edit the worktree themselves, discard, or request another `--review` pass. Nothing is baked into the branch without this go-ahead.
+  4. On the go-ahead, back in `/evaluate` (any model — this step is mechanical), **amend** the branch commit on `bd/<id>` with the applied fixes. The story stays on its branch and in `needs-review`; nothing changes status and the worktree is kept.
+  5. Re-open the diff and return to **step 3** so the human approves the amended branch or asks for another pass. Loop until they approve (4a) — each pass is another pinned-frontier `/code-review`, a confirm-before-amend, and the amend.
+  - **Host note:** `/code-review` is the review-and-apply mechanism on Claude Code. On Codex, run that host's equivalent review-and-apply command in the same pinned-frontier subagent against the same worktree, then amend identically — the behavior (frontier reviewer, apply fixes in place, amend `bd/<id>`) is what matters, not the command name.
+- **The contract itself is wrong** → `/code-review` can't fix a wrong spec. `bd label add <id> needs-refinement` + a `bd comment` with the reason (if not already recorded via `--note`), remove `needs-review`. Tell the user: `/refine <id>` to fix the contract first, then `/solve <id>`.
 
-Either way the feedback lives as a durable per-story comment, readable later via `/board <id>`.
+Either way the reason lives as a durable per-story comment, readable later via `/board <id>`.
 
 ## bd / git map (confirm flags via `--help`)
 
@@ -73,7 +79,8 @@ Either way the feedback lives as a durable per-story comment, readable later via
 | record note / feedback | `bd comment <id> "<text>"` |
 | approve | `bd close <id>` + `bd label remove <id> needs-review` |
 | clean up | `git worktree remove …` + `git branch -d bd/<id>` |
-| request impl change | `bd comment` + `bd update <id> --status in_progress` + `bd label remove <id> needs-review` (keep branch) |
+| request impl change | spawn **frontier-pinned** subagent → `/code-review <effort> --fix` in `../<repo>-worktrees/<id>` (effort from `--review`, default `high`) → show applied diff + **confirm before amend** → amend `bd/<id>` (keep branch + `needs-review`) |
+| show reviewer's applied diff | `git -C ../<repo>-worktrees/<id> diff` (before staging/amend) |
 | contract wrong | `bd label add <id> needs-refinement` + `bd comment` + `bd label remove <id> needs-review` |
 
-Single-writer discipline: `/evaluate` is the only skill that merges to `main` and closes a story. It never edits the contract body (`/case` / `/refine`) and never writes implementation code (`/solve`).
+Single-writer discipline: `/evaluate` is the only skill that merges to `main` and closes a story, and it never edits the contract body (`/case` / `/refine`). It does not hand-write implementation code, but its request-changes path **delegates** the fix to a frontier-pinned `/code-review` subagent, which applies it in place on `bd/<id>` — review-time fixes live on the review tier (and always on a frontier model, regardless of what model `/evaluate` runs on); greenfield implementation stays `/solve`'s job.

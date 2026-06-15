@@ -9,6 +9,38 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-06-16
+
+Plugin & marketplace entry `case-solvers` `2.2.0` → `2.3.0`.
+
+**`/evaluate` request-changes now fixes in place via a frontier-pinned `/code-review` subagent
+instead of bouncing work back to `/solve`.** When the implementation needs work but the contract is
+sound, `/evaluate` spawns a subagent **with its model pinned to a frontier tier** (Sonnet/Opus on
+Claude, GPT-5-class on Codex — the same IDs the `/case` Model Guard treats as planning), runs
+`/code-review <effort> --fix` against the story's worktree inside it, then **shows the human the
+reviewer's applied diff and amends `bd/<id>` only after an explicit confirm** — and re-opens the diff
+for another verdict. The story never leaves `needs-review`. The reviewer is frontier regardless of
+what model `/evaluate` itself runs on; the amend is mechanical and stays in `/evaluate`, gated on the
+human's go-ahead. A wrong *contract* still routes to `/refine`. This shifts review-time code
+fixes onto the review tier; greenfield implementation stays `/solve`'s job (CLAUDE.md single-writer
+discipline updated to match).
+
+### Changed
+- `/evaluate` (`v1.2.0` → `v1.3.0`): **replaced** the `--request-changes` /
+  `--request-changes --note <text>` flags with **`--review [effort]`** — a fast-path that runs the
+  `/code-review` pass straight away at `effort` (default `high`; any `/code-review` level), applies
+  fixes in place, shows the applied diff, and amends the branch **only after the human confirms**.
+  The review-and-apply runs in a subagent **pinned to a frontier model** (`/evaluate` has no model
+  gate of its own, so the reviewer's tier is pinned explicitly, never inherited); if no frontier model
+  is available to pin, it stops rather than review on a budget model. `--review` always takes the implementation path; a wrong *contract* still routes
+  to `/refine` via the interactive flow. `--note <text>` now steers the reviewer (e.g. "focus on …")
+  in addition to annotating the story. `--approve` / `--approve --note <text>` and the interactive
+  flow are unchanged. A **Host note** documents the Codex equivalent (run that host's review-and-apply
+  command in the same pinned-frontier subagent against the same worktree, then amend identically).
+- `/solve` (`v1.0.1` → `v1.0.2`): the "resuming" note now covers an existing `bd/<id>` branch in
+  general (a contract sent back via `/refine`, or earlier in-progress work) and clarifies that
+  implementation-only review fixes no longer return here — `/evaluate` applies those in place.
+
 ## [2.2.0] - 2026-06-14
 
 Plugin & marketplace entry `case-solvers` `2.1.0` → `2.2.0`; `writing-claude-md` `1.0.0` → `1.1.0`.
