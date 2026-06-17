@@ -1,7 +1,7 @@
 ---
 name: case
 description: 'Author one bd story, or decompose a large goal into an epic, on a planning model. Authoring only — view the board with /board, revise an existing story with /refine.'
-version: 2.1.0
+version: 2.1.1
 argument-hint: '<description>'
 disable-model-invocation: true
 user-invocable: true

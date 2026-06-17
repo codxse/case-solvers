@@ -9,6 +9,19 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-06-17
+
+Plugin & marketplace entry `case-solvers` `2.3.1` → `2.3.2`.
+
+**Fix: `/case` and `/refine` now properly include the shared contract rubrics in agent context.**
+The shared rubric file (`contract-rubrics.md`) was referenced in the skill instructions but without
+the `@` prefix required by the plugin harness for file inclusion. Agents were instructed to read it
+but the harness wasn't providing its contents, preventing them from following the rubrics.
+
+### Changed
+- `/case` (`v2.1.0` → `v2.1.1`): added `@` prefix to shared rubric reference to enable file inclusion.
+- `/refine` (`v1.1.0` → `v1.1.1`): added `@` prefix to shared rubric reference to enable file inclusion.
+
 ## [2.3.1] - 2026-06-17
 
 Plugin & marketplace entry `case-solvers` `2.3.0` → `2.3.1`.

@@ -1,7 +1,7 @@
 ---
 name: refine
 description: 'Revise an existing bd story contract on a planning model — typically one labelled needs-refinement after a /solve spec-gap or /evaluate change-request. Applies the feedback, stays WHAT-only, returns it to ready for /solve. Use when the user asks to refine/revise/update a story by id.'
-version: 1.1.0
+version: 1.1.1
 argument-hint: '<story-id>'
 user-invocable: true
 ---
