@@ -9,6 +9,25 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-06-17
+
+Plugin & marketplace entry `case-solvers` `2.3.0` → `2.3.1`.
+
+**Fix: `/evaluate --review` now reliably dispatches the reviewer on a frontier model (Opus by
+default) instead of inheriting `/evaluate`'s ambient model.** When `/evaluate` itself ran on a budget
+model (e.g. Haiku), the request-changes subagent was inheriting that budget model — the `/code-review`
+pass ran on Haiku despite the intent to pin it. The instruction offered a vague "`sonnet` or `opus`"
+choice with no concrete spawn shape, so the model argument was often left unset.
+
+### Changed
+- `/evaluate` (`v1.3.0` → `v1.3.1`): the request-changes (and `--review [effort]`) path now makes
+  frontier pinning **mandatory and concrete** — the subagent spawn must set its `model` argument
+  explicitly, defaulting to **`opus`** (`Agent(subagent_type: …, model: "opus", …)` on Claude Code;
+  frontier GPT-5-class on Codex), with `sonnet` only as a fallback when Opus is unavailable. Inheriting
+  the ambient model or running the review inline on `/evaluate`'s own model is now explicitly
+  prohibited; a budget ID is never pinned. Effort still passes through to `/code-review` (default
+  `high`).
+
 ## [2.3.0] - 2026-06-16
 
 Plugin & marketplace entry `case-solvers` `2.2.0` → `2.3.0`.
