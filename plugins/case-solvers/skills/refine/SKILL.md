@@ -73,7 +73,7 @@ emit the model-guard line and the stop message above, and write nothing.
 ## 2. Load the bars
 
 Read the shared rubrics — `shared/contract-rubrics.md` at this plugin's root (from this skill folder:
-`../../shared/contract-rubrics.md`). Authoring principles, AC Quality Rubric, Budget-Solver Fit,
+`@../../shared/contract-rubrics.md`). Authoring principles, AC Quality Rubric, Budget-Solver Fit,
 Pre-write Guard, and Output Format all apply to the revision exactly as they do to a fresh story.
 
 ## 3. Vet the reason before trusting it

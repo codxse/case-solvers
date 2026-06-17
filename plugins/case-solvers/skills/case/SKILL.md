@@ -80,7 +80,7 @@ Invoked as `/case <description>` — the whole argument is the description to au
 
 ## Authoring: Story vs Epic
 
-After the guards pass, **read the shared rubrics** (`../../shared/contract-rubrics.md`): Authoring
+After the guards pass, **read the shared rubrics** (`@../../shared/contract-rubrics.md`): Authoring
 principles, Problem Types, Budget-Solver Fit, Verification Mode, AC Quality Rubric, Pre-write Guard,
 and Output Format — every contract below must satisfy them.
 
