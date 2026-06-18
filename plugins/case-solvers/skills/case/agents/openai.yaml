@@ -1,7 +1,0 @@
-# Codex invocation policy for /case — mirrors `disable-model-invocation: true`
-# in SKILL.md (Claude Code). Side-effecting + frontier-gated: explicit only,
-# never auto-fired mid-conversation.
-interface:
-  display_name: "Case"
-policy:
-  allow_implicit_invocation: false

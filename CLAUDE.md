@@ -40,12 +40,17 @@ publish the same two plugins under `plugins/`:
   the backlog (or one story), no model gate. A skill recognizes its own tier from its system prompt
   — by **model-ID substring**, not host, so the frontier list spans both hosts (Opus/Sonnet/Fable on
   Claude, GPT-5-class on Codex).
-- **Invocation tracks blast radius, not read/write.** The tier-gated/side-effecting commands
-  (`/case`, `/solve`, `/evaluate`) are slash-only (`disable-model-invocation` on Claude /
-  `allow_implicit_invocation: false` on Codex) so they never auto-fire mid-conversation. The low-risk
-  ones are model-invocable: `/board` (read-only) and
-  `/refine` (names an id, confirm + tier guard backstop it), so plain-English asks like "show
-  story 5" or "update story 5" route to them.
+- **Invocation tracks blast radius, not read/write.** The high-blast-radius commands that bake work
+  into a branch — `/solve` (writes code) and `/evaluate` (merges + closes) — are slash-only
+  (`disable-model-invocation` on Claude / `allow_implicit_invocation: false` on Codex) so they never
+  auto-fire mid-conversation. The rest are model-invocable so plain-English asks route to them:
+  `/board` (read-only), `/refine` (names an id), and `/case` (authors a new story/epic — a
+  plain-English ask like "let's put our problem to a case" should reach it). `/case` and `/refine`
+  write to bd but are backstopped the same way: the planning-tier **Model Guard** runs first and
+  **nothing is committed to bd until the user confirms**, so an implicit fire can't silently author
+  on the wrong tier or without sign-off. Their model-invocable skills carry no
+  `disable-model-invocation` / `allow_implicit_invocation: false` gate (and no `agents/openai.yaml`
+  at all on Codex) — presence of that gate is the at-a-glance marker of a slash-only skill.
 - **bd is the engine, not the interface.** bd (Beads) is the durable issue store, but the
   plugin's end user never types a `bd` command and never sees raw bd output — skills translate
   to/from bd and render human-friendly. Keep bd hidden when editing skill prose. (This is the

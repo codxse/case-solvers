@@ -9,6 +9,26 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-06-18
+
+Plugin & marketplace entry `case-solvers` `2.5.0` → `2.6.0`.
+
+**`/case` is now model-invocable — a plain-English ask reaches it, not just the slash command.** Saying
+something like "let's put our problem to a case" now routes to `/case` instead of requiring you to type
+`/case`. It stays safely backstopped: the planning-tier **Model Guard** still runs first and nothing is
+written to bd until you confirm, the same guards that let `/refine` be model-invocable. The
+description gained trigger phrasing so the model knows when to fire. This moves `/case` out of the
+slash-only group (now just `/solve` and `/evaluate`, which bake work into a branch) and the philosophy
+note in CLAUDE.md was updated to match.
+
+### Changed
+- `/case` (`v2.1.1` → `v2.2.0`): dropped `disable-model-invocation` (Claude) and removed its
+  `agents/openai.yaml` (`allow_implicit_invocation: false`, Codex), so it's implicitly invocable on
+  both hosts; description now carries invocation triggers.
+- `CLAUDE.md`: "Invocation tracks blast radius" bullet rewritten — slash-only is now `/solve` +
+  `/evaluate`; `/case` joins `/board`/`/refine` as model-invocable, backstopped by Model Guard +
+  confirm-before-write.
+
 ## [2.5.0] - 2026-06-18
 
 Plugin & marketplace entry `case-solvers` `2.4.0` → `2.5.0`.

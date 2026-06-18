@@ -1,9 +1,8 @@
 ---
 name: case
-description: 'Author one bd story, or decompose a large goal into an epic, on a planning model. Authoring only — view the board with /board, revise an existing story with /refine.'
-version: 2.1.1
+description: 'Author one bd story, or decompose a large goal into an epic, on a planning model. Authoring only — view the board with /board, revise an existing story with /refine. Use when the user asks to open/file a case, put a problem or goal "to a case", or write a new story or epic — e.g. "let''s put our problem to a case".'
+version: 2.2.0
 argument-hint: '<description>'
-disable-model-invocation: true
 user-invocable: true
 ---
 
