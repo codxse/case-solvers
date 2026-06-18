@@ -9,6 +9,25 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-06-18
+
+Plugin & marketplace entry `case-solvers` `2.4.0` → `2.5.0`.
+
+**A story now lands back on the branch it was forked from — not hardcoded `main`.** `/solve` used to
+fork every worktree off `main` and `/evaluate --approve` merged it back to `main`, so work started on a
+feature branch like `my-branch` still landed on the trunk. Now `/solve` forks `bd/<id>` off the repo's
+**current active branch** (`<base>` — `main`, `master`, or a feature branch, whatever is checked out)
+and records that base in its review handoff; `/evaluate --approve` reads `<base>`, checks the main
+worktree out to it, and rebases + fast-forward-lands the story there. Older stories with no recorded
+base fall back to the branch currently checked out in the main worktree. (`--note` to skip landing is
+unchanged.)
+
+### Changed
+- `/solve` (`v1.0.2` → `v1.1.0`): forks the worktree off the current active branch instead of
+  hardcoded `main`, and records **Base branch:** in the review handoff comment.
+- `/evaluate` (`v1.4.0` → `v1.5.0`): approve path resolves the story's base branch (recorded handoff,
+  or the main worktree's current branch) and lands on it; description, step 4a, and bd/git map updated.
+
 ## [2.4.0] - 2026-06-18
 
 Plugin & marketplace entry `case-solvers` `2.3.2` → `2.4.0`.

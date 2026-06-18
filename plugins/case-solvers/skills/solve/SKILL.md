@@ -1,7 +1,7 @@
 ---
 name: solve
 description: 'Implement one bd story by id in an isolated git worktree+branch, ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks.'
-version: 1.0.2
+version: 1.1.0
 argument-hint: '[<story-id>]'
 disable-model-invocation: true
 user-invocable: true
@@ -60,7 +60,7 @@ Check the story's blockers (`bd ready` includes it only if unblocked; else inspe
 
 ### 3. Claim & branch
 - `bd update <id> --claim --assignee claude` then `--status in_progress` (claiming prevents another parallel session from grabbing the same story).
-- **Fresh story** → create the worktree off local `main`: branch `bd/<id>`, worktree at sibling `../<repo>-worktrees/<id>`. Do all work there.
+- **Fresh story** → create the worktree off the repo's **current active branch** — the branch checked out in the main worktree right now (`git branch --show-current`), call it `<base>`. It may be the trunk (`main` or `master`) or a feature branch like `my-branch`; fork from whatever is checked out, **never hardcode `main`/`master`**. Branch `bd/<id>`, worktree at sibling `../<repo>-worktrees/<id>`. Do all work there. `/evaluate` lands the approved story back onto `<base>`, so record `<base>` in the review handoff (step 6).
 - **Resuming on an existing branch** (`bd/<id>` already exists — e.g. a contract sent back via `/refine`, or your own earlier in-progress work) → reuse that worktree; read the latest comment (`bd show <id>` includes comments) for the latest direction and address exactly that. Don't recreate the branch. (Implementation-only review fixes no longer come back here — `/evaluate` applies those in place via `/code-review`.)
 - Parallelism = the user runs another `/solve <other-id>` in a separate session; each gets its own worktree.
 
@@ -89,7 +89,7 @@ All four pass → execute (the sketches become your test plan). Any fail → **d
 ### 6. Hand to review — never merge
 When the AC pass:
 - Commit on branch `bd/<id>`.
-- `bd label add <id> needs-review` and post a `bd comment` summarising for the reviewer: **what was built + how to exercise it** (for a `human`/`both` Verification, spell out exactly what a person should check and the command/screen/input), **files changed** (one line each, every line traceable to an AC), and any AC that fell back to a runtime observation.
+- `bd label add <id> needs-review` and post a `bd comment` summarising for the reviewer: **Base branch:** `<base>` (the branch this was forked from — where `/evaluate` lands it on approve), **what was built + how to exercise it** (for a `human`/`both` Verification, spell out exactly what a person should check and the command/screen/input), **files changed** (one line each, every line traceable to an AC), and any AC that fell back to a runtime observation.
 - **Do not close, do not merge.** Tell the user:
   > Story `<id>` done, on branch `bd/<id>`, now in **DONE · review & merge**. Run `/evaluate <id>` to review the diff in VSCode and merge.
 
@@ -118,7 +118,7 @@ When stopped: emit a **Needs Clarification** report — each gap (one line, conc
 | is it ready? | `bd ready` / `bd blocked` |
 | claim | `bd update <id> --claim --assignee claude` |
 | start | `bd update <id> --status in_progress` |
-| isolate | `git worktree add ../<repo>-worktrees/<id> -b bd/<id> main` |
+| isolate (off the current active branch) | capture `<base>` = `git branch --show-current`, then `git worktree add ../<repo>-worktrees/<id> -b bd/<id> <base>` — fork from whatever is checked out now (`main`, `master`, or a feature branch), never hardcode the trunk |
 | reopen / release claim | `bd update <id> --status open` (confirm claim-release flag via `--help`) |
 | drop worktree (abort) | `git worktree remove ../<repo>-worktrees/<id>` + `git branch -D bd/<id>` |
 | spec-gap / clarification | `bd label add <id> needs-refinement` + `bd comment` |

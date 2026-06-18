@@ -1,7 +1,7 @@
 ---
 name: evaluate
-description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (merge to main, close, unblock dependents) or request changes. Request changes spawns a frontier-pinned subagent (Opus by default, never the ambient model) that runs /code-review and applies the fixes in place, shows you the applied diff, and amends bd/<id> only after you confirm; a wrong contract instead routes to /refine. --approve merges without opening the diff; --review [effort] runs the code-review pass straight away (default high); --note <text> steers the review and/or annotates the story.'
-version: 1.4.0
+description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (land it on the branch it was forked from — `main`, `master`, or a feature branch — close, unblock dependents) or request changes. Request changes spawns a frontier-pinned subagent (Opus by default, never the ambient model) that runs /code-review and applies the fixes in place, shows you the applied diff, and amends bd/<id> only after you confirm; a wrong contract instead routes to /refine. --approve lands it on its base branch without opening the diff; --review [effort] runs the code-review pass straight away (default high); --note <text> steers the review and/or annotates the story.'
+version: 1.5.0
 argument-hint: '[<story-id>] [--approve] [--review [effort]] [--note <text>]'
 disable-model-invocation: true
 user-invocable: true
@@ -37,7 +37,7 @@ Story id: use the argument if supplied. If omitted but a story was mentioned ear
 - Surface the solver's review comment: **what was built, how to exercise it, files changed**, and any AC that fell back to a runtime observation or needs a `human`/`both` check.
 - Open the branch in VSCode for review:
   - `code ../<repo>-worktrees/<id>` (the story's worktree on branch `bd/<id>`).
-  - `code` not on PATH → print the worktree path and branch name and the command `git diff main...bd/<id>`, and let the user review in their own tool.
+  - `code` not on PATH → print the worktree path and branch name and the command `git diff <base>...bd/<id>` (`<base>` = the story's base branch, read per step 4a), and let the user review in their own tool.
 - For a `human`/`both` Verification story, remind the user to actually exercise the running system per the solver's instructions, not just read the diff.
 
 ### 3. Ask the verdict
@@ -45,12 +45,13 @@ Ask plainly: **approve & merge**, or **request changes**? Do not push an opinion
 
 ### 4a. Approve → merge, close, unblock
 1. If `--note <text>` was supplied, record it as a `bd comment` on the story first.
-2. Land `bd/<id>` on `main` as **one commit, no merge commit**: rebase the branch onto `main` first, then fast-forward it in — `git -C <main-worktree> rebase main bd/<id>` (or rebase inside the worktree), then `git -C <main-worktree> merge --ff-only bd/<id>`. Never a plain `git merge` / `--no-ff` — that adds a second "Merge bd/<id>" commit, which is what we're avoiding. `--ff-only` is the guardrail: if it refuses, the rebase didn't complete (resolve per the gate below), not a reason to fall back to a merge commit.
-3. **Conflict while rebasing?** Apply the confidence gate:
+2. Resolve the **base branch** `<base>` — the branch `/solve` forked this story from, which is where it lands. Read **Base branch:** `<base>` from the solver's handoff comment (`bd show <id>`). If it isn't recorded (an older story), fall back to the branch currently checked out in the main worktree (`git -C <main-worktree> branch --show-current`). `<base>` may be the trunk (`main`/`master`) or a feature branch like `my-branch` — **never assume `main`.**
+3. Land `bd/<id>` on `<base>` as **one commit, no merge commit**: make sure the main worktree is on `<base>` (`git -C <main-worktree> checkout <base>`), rebase the branch onto `<base>` first, then fast-forward it in — `git -C <main-worktree> rebase <base> bd/<id>` (or rebase inside the worktree), then `git -C <main-worktree> merge --ff-only bd/<id>`. Never a plain `git merge` / `--no-ff` — that adds a second "Merge bd/<id>" commit, which is what we're avoiding. `--ff-only` is the guardrail: if it refuses, the rebase didn't complete (resolve per the gate below), not a reason to fall back to a merge commit.
+4. **Conflict while rebasing?** Apply the confidence gate:
    - **Clear & safe** — purely additive/textual, both sides' intent preserved, AND the branch's tests stay green after resolving → auto-resolve and continue the rebase. The resolution is part of the merge the user just approved; show it.
    - **Ambiguous** — both sides changed the same logic/value differently, or resolving means one story's AC must lose, or tests go red → **do not guess.** Present it decision-ready: the conflict, the two intents, the options, your recommendation. Let the human decide, then apply. (A semantic conflict often means the decomposition let two stories collide — worth flagging for `/refine`.)
-4. After a clean merge: `bd close <id>` (this unblocks any dependents — recompute and report which stories are now READY), remove the `needs-review` label, and remove the worktree + delete branch `bd/<id>`.
-5. Report: merged, closed, and the newly-unblocked stories (`/solve <id>` to pick one).
+5. After a clean merge: `bd close <id>` (this unblocks any dependents — recompute and report which stories are now READY), remove the `needs-review` label, and remove the worktree + delete branch `bd/<id>`.
+6. Report: landed on `<base>`, closed, and the newly-unblocked stories (`/solve <id>` to pick one).
 
 ### 4b. Request changes → fix in place via /code-review
 If `--note <text>` was supplied, record it as a `bd comment` now (before asking anything else).
@@ -74,8 +75,9 @@ Either way the reason lives as a durable per-story comment, readable later via `
 |---|---|
 | read story + review comment | `bd show <id>` |
 | review queue / recompute ready | `bd list` (filter `needs-review`) / `bd ready` |
-| open diff for human | `code ../<repo>-worktrees/<id>` (or `git diff main...bd/<id>`) |
-| merge (linear, one commit, no merge commit) | `git -C <main-worktree> rebase main bd/<id>` then `git -C <main-worktree> merge --ff-only bd/<id>` — never plain `merge`/`--no-ff` |
+| open diff for human | `code ../<repo>-worktrees/<id>` (or `git diff <base>...bd/<id>`) |
+| resolve base branch `<base>` | read **Base branch:** from `bd show <id>`; fallback `git -C <main-worktree> branch --show-current` — never assume `main` |
+| merge (linear, one commit, no merge commit) | `git -C <main-worktree> checkout <base>`, `git -C <main-worktree> rebase <base> bd/<id>`, then `git -C <main-worktree> merge --ff-only bd/<id>` — lands on `<base>` (the forked-from branch, not necessarily `main`); never plain `merge`/`--no-ff` |
 | record note / feedback | `bd comment <id> "<text>"` |
 | approve | `bd close <id>` + `bd label remove <id> needs-review` |
 | clean up | `git worktree remove …` + `git branch -d bd/<id>` |
@@ -83,4 +85,4 @@ Either way the reason lives as a durable per-story comment, readable later via `
 | show reviewer's applied diff | `git -C ../<repo>-worktrees/<id> diff` (before staging/amend) |
 | contract wrong | `bd label add <id> needs-refinement` + `bd comment` + `bd label remove <id> needs-review` |
 
-Single-writer discipline: `/evaluate` is the only skill that merges to `main` and closes a story, and it never edits the contract body (`/case` / `/refine`). It does not hand-write implementation code, but its request-changes path **delegates** the fix to a frontier-pinned `/code-review` subagent, which applies it in place on `bd/<id>` — review-time fixes live on the review tier (and always on a frontier model, regardless of what model `/evaluate` runs on); greenfield implementation stays `/solve`'s job.
+Single-writer discipline: `/evaluate` is the only skill that lands a story on its base branch (the branch it was forked from) and closes it, and it never edits the contract body (`/case` / `/refine`). It does not hand-write implementation code, but its request-changes path **delegates** the fix to a frontier-pinned `/code-review` subagent, which applies it in place on `bd/<id>` — review-time fixes live on the review tier (and always on a frontier model, regardless of what model `/evaluate` runs on); greenfield implementation stays `/solve`'s job.
