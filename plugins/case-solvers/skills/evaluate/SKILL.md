@@ -1,7 +1,7 @@
 ---
 name: evaluate
 description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (merge to main, close, unblock dependents) or request changes. Request changes spawns a frontier-pinned subagent (Opus by default, never the ambient model) that runs /code-review and applies the fixes in place, shows you the applied diff, and amends bd/<id> only after you confirm; a wrong contract instead routes to /refine. --approve merges without opening the diff; --review [effort] runs the code-review pass straight away (default high); --note <text> steers the review and/or annotates the story.'
-version: 1.3.1
+version: 1.4.0
 argument-hint: '[<story-id>] [--approve] [--review [effort]] [--note <text>]'
 disable-model-invocation: true
 user-invocable: true
@@ -45,9 +45,9 @@ Ask plainly: **approve & merge**, or **request changes**? Do not push an opinion
 
 ### 4a. Approve → merge, close, unblock
 1. If `--note <text>` was supplied, record it as a `bd comment` on the story first.
-2. Merge `bd/<id>` into `main`.
-3. **Merge conflict?** Apply the confidence gate:
-   - **Clear & safe** — purely additive/textual, both sides' intent preserved, AND the branch's tests stay green after resolving → auto-resolve. The resolution is part of the merge the user just approved; show it.
+2. Land `bd/<id>` on `main` as **one commit, no merge commit**: rebase the branch onto `main` first, then fast-forward it in — `git -C <main-worktree> rebase main bd/<id>` (or rebase inside the worktree), then `git -C <main-worktree> merge --ff-only bd/<id>`. Never a plain `git merge` / `--no-ff` — that adds a second "Merge bd/<id>" commit, which is what we're avoiding. `--ff-only` is the guardrail: if it refuses, the rebase didn't complete (resolve per the gate below), not a reason to fall back to a merge commit.
+3. **Conflict while rebasing?** Apply the confidence gate:
+   - **Clear & safe** — purely additive/textual, both sides' intent preserved, AND the branch's tests stay green after resolving → auto-resolve and continue the rebase. The resolution is part of the merge the user just approved; show it.
    - **Ambiguous** — both sides changed the same logic/value differently, or resolving means one story's AC must lose, or tests go red → **do not guess.** Present it decision-ready: the conflict, the two intents, the options, your recommendation. Let the human decide, then apply. (A semantic conflict often means the decomposition let two stories collide — worth flagging for `/refine`.)
 4. After a clean merge: `bd close <id>` (this unblocks any dependents — recompute and report which stories are now READY), remove the `needs-review` label, and remove the worktree + delete branch `bd/<id>`.
 5. Report: merged, closed, and the newly-unblocked stories (`/solve <id>` to pick one).
@@ -75,7 +75,7 @@ Either way the reason lives as a durable per-story comment, readable later via `
 | read story + review comment | `bd show <id>` |
 | review queue / recompute ready | `bd list` (filter `needs-review`) / `bd ready` |
 | open diff for human | `code ../<repo>-worktrees/<id>` (or `git diff main...bd/<id>`) |
-| merge | `git -C <main-worktree> merge bd/<id>` |
+| merge (linear, one commit, no merge commit) | `git -C <main-worktree> rebase main bd/<id>` then `git -C <main-worktree> merge --ff-only bd/<id>` — never plain `merge`/`--no-ff` |
 | record note / feedback | `bd comment <id> "<text>"` |
 | approve | `bd close <id>` + `bd label remove <id> needs-review` |
 | clean up | `git worktree remove …` + `git branch -d bd/<id>` |

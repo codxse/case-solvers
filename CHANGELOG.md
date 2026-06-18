@@ -9,6 +9,21 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-06-18
+
+Plugin & marketplace entry `case-solvers` `2.3.2` → `2.4.0`.
+
+**`/evaluate --approve` now lands the story as one linear commit — no merge commit.** Approving a
+story used to run a plain `git merge bd/<id>`, which produced a second "Merge bd/<id>" commit on the
+target branch whenever the branch had fallen behind. Step 4a now **rebases `bd/<id>` onto the target
+and fast-forwards it in** (`git merge --ff-only`), so the story's own commit is the only thing that
+lands. The conflict confidence gate now fires on *rebase* conflicts (same clear-vs-ambiguous logic),
+and `--ff-only` is the guardrail against silently falling back to a merge commit.
+
+### Changed
+- `/evaluate` (`v1.3.1` → `v1.4.0`): approve path rebases then fast-forward-merges instead of a plain
+  merge; bd/git map and conflict gate updated to match.
+
 ## [2.3.2] - 2026-06-17
 
 Plugin & marketplace entry `case-solvers` `2.3.1` → `2.3.2`.
