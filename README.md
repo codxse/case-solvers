@@ -1,196 +1,177 @@
 # Case Solvers
 
-A plugin marketplace by [codxse](https://github.com/codxse) for both **Claude Code** and **OpenAI
-Codex** — the same skills run on either host. Currently ships two plugins:
+Two agent plugins for **Claude Code** and **OpenAI Codex** — same skills, either host.
 
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
-| `case-solvers` | `/case`, `/refine`, `/board`, `/solve`, `/evaluate` | bd-backed, parallel-capable workflow: author stories/epics → solve in worktrees → review & merge |
+| `case-solvers` | `/case`, `/refine`, `/board`, `/solve`, `/evaluate` | bd-backed, parallel coding workflow: author stories/epics → solve in worktrees → review & merge |
 | `writing-claude-md` | `/writing-claude-md` | Write lean, high-signal CLAUDE.md / AGENTS.md context files |
+
+## Why I built this
+
+I don't trust AI to one-shot a big app. I don't think that's where it's good — and I don't think
+that's the point.
+
+What today's AI *is* good at is **following instructions**. So my job changed. It's no longer to write
+the code; it's to write the **instruction the AI will follow**. The hard part moved up a level.
+
+The unit of that instruction is a **story**: a bounded, unambiguous primitive of work. This isn't a
+new idea — it's the same "story" agile has always meant: one small, testable outcome. I lean on it
+here for a specific reason about how models behave.
+
+**Cheap models follow bounded, unambiguous instructions reliably, but degrade as a task grows in
+ambiguity and scope.** It isn't about context window size — many cheap models have huge ones. It's
+**reasoning capacity under ambiguity**: hand a budget model a large, vague, multi-step goal and it
+drifts; hand it a tight, well-bounded story and it executes. So the fix is never "use a smaller
+prompt" — it's "shrink the ambiguity." A story *is* that shrinking.
+
+But writing a good story is its own hard problem. Often **I don't actually know what I want** until
+something forces me to say it precisely. That's the job of a **frontier model**: not to write code,
+but to *grill me* — to understand me and turn a fuzzy intent into a clear contract. Authoring a story
+is a feedback loop, human-steered. I stay in it because only I know what I actually want.
+
+A story says **WHAT and WHY — never HOW**. It states the outcome and why it matters; it bounds the
+search space (what to look at, what's out of scope). It does **not** dictate the mechanism — which
+function, which pattern, which file. The frontier model isn't remote-controlling the budget model.
+It's handing it a clear primitive and getting out of the way.
+
+Because a story is a *testable* outcome, the solver proves it the way I would — **red, green,
+refactor.** Write the failing test that encodes the story's acceptance criteria (red), make it pass
+with the simplest thing that works (green), then clean it up (refactor). The test is the contract
+made executable: it's how I know the bounded outcome was actually met, not just claimed.
+
+When a goal is too big for one story, I break it into an **epic** — a graph of stories — the same way
+agile does.
+
+And I stay in the loop at the **end**, too. As an engineer I need to know what I shipped: to learn
+from it, and to reject what isn't right or isn't to my taste. AI doesn't get to approve its own work
+into `main`.
+
+So three roles fall out, each matched to the model that's actually good at it:
+
+- **Frontier model — the architect.** Grills me into a clear story (WHAT/WHY). `/case`, `/refine`.
+- **Budget model — the solver.** Executes one bounded story (HOW). `/solve`.
+- **Me — the evaluator.** Reviews and merges. `/evaluate`.
+
+Using a frontier model for *everything* is economically silly. This split is the sweet spot: pay for
+the expensive model only where judgment is needed, let the cheap model do the bounded work, and keep
+the human where the human is irreplaceable.
+
+**This is not vibe coding.** Vibe coding lets the model run and accepts output you didn't read. This
+is the opposite: I follow every change. It's closer to pairing with a real engineer — except I can
+run several in parallel, each on its own bounded story. The thing that scales here isn't the app or
+the model's output; it's the **code I can actually keep up with**. Throughput is bounded by how many
+stories I can follow and evaluate at once — and that's deliberate, not a limitation. The human stays
+the bottleneck on purpose. Which means **this isn't for everyone**: if you'd rather not look at the
+code, this isn't your tool.
+
+The stories live in [**bd** (Beads)](https://github.com/steveyegge/beads) so I can record them and
+solve many in parallel — but you never type a `bd` command. The skills keep it hidden.
+
+> Why "case" and not "spec" or "problem"? Plain naming I'd have preferred wasn't invokable outside
+> Claude Code. So: a **case** — something you open, work, and close.
 
 ## Install
 
-### Claude Code
+**Claude Code**
 
 ```
 /plugin marketplace add codxse/case-solvers
-```
-
-Then install whichever plugins you want:
-
-```
 /plugin install case-solvers@case-solvers
 /plugin install writing-claude-md@case-solvers
 ```
 
-### Codex
+**Codex**
 
 ```
 codex plugin marketplace add codxse/case-solvers
-```
-
-Then install whichever plugins you want:
-
-```
 codex plugin add case-solvers@case-solvers
 codex plugin add writing-claude-md@case-solvers
 ```
 
-(Or browse and enable them from Codex's plugin directory.) For personal, cross-repo use, add the same
-marketplace to your `~/.agents/plugins/marketplace.json`. The skill bodies are identical to the Claude
-Code build — only the manifests differ.
+> **Install the plugin, not loose skill folders.** `/case` and `/refine` read shared rubrics at the
+> plugin root (`../../shared/...`); plugin installs copy the whole directory, so this resolves.
+> Copying only `skills/<name>/` leaves the rubrics behind and breaks both commands.
 
-> **Install the plugin, not loose skill folders.** `/case` and `/refine` read shared rubrics from
-> `shared/contract-rubrics.md` at the plugin root (`../../shared/...` relative to the skill). Plugin
-> installs copy the whole plugin directory, so this resolves. Copying only `skills/<name>/` into
-> `~/.agents/skills` leaves the rubrics behind and breaks both commands.
-
-**Gating:** `/case` and `/refine` require a **frontier model** (e.g. `gpt-5.5-high`); `/solve` runs
-on any tier.
+**Gating:** `/case` and `/refine` require a **frontier model**; `/solve` runs on any tier.
 
 ---
 
-## `case-solvers` — bd-backed, parallel-capable coding workflow
+## `case-solvers` — bd-backed, parallel coding workflow
 
-A capable **planning model** acts as the architect (`/case`) and defines *what* to build; a
-cheap **budget model** acts as the solver (`/solve`) and does *how*; you review and merge
-(`/evaluate`). Work lives in [**bd** (Beads)](https://github.com/steveyegge/beads) — a
-git-backed, dependency-aware issue tracker — so you can stockpile many tasks and solve any of
-them anytime, in parallel. **bd stays hidden**: you only ever type the slash commands, never `bd`.
+The [three roles](#why-i-built-this) as commands: the **architect** (`/case`, `/refine`), the
+**solver** (`/solve`), and you, the **evaluator** (`/evaluate`). Work lives in
+[**bd** (Beads)](https://github.com/steveyegge/beads) — a git-backed, dependency-aware issue tracker
+— so you can stockpile many stories and solve any of them anytime, in parallel. **bd stays hidden**:
+you only ever type the slash commands, never `bd`.
 
-**Requirements:** the `bd` (Beads) CLI must be installed and on your `PATH` — `brew install
-beads` (or `npm i -g @beads/bd`, or `go install github.com/steveyegge/beads@latest`). The
-skills assume it's present (they no longer check) and run `bd init` in your project on first
-use.
+**Requirements:** the `bd` CLI on your `PATH` — `brew install beads` (or `npm i -g @beads/bd`, or
+`go install github.com/steveyegge/beads@latest`). The skills assume it's present and run `bd init` on
+first use.
 
-To skip permission prompts, add this to `.claude/settings.json` in your project:
+<details>
+<summary>To skip permission prompts, add this to <code>.claude/settings.json</code></summary>
 
 ```json
 {
-  "allowedTools": [
-    "Bash(bd *)",
-    "Bash(code *)"
-  ],
+  "allowedTools": ["Bash(bd *)", "Bash(code *)"],
   "permissions": {
     "allow": [
-      "Bash(cat *)",
-      "Bash(ls)",
-      "Bash(ls *)",
-      "Bash(find *)",
-      "Bash(grep *)",
-      "Bash(head *)",
-      "Bash(tail *)",
-      "Bash(wc *)",
-      "Bash(file *)",
-      "Bash(stat *)",
-      "Bash(pwd)",
-      "Bash(echo *)",
-      "Bash(which *)",
-      "Bash(type *)",
-      "Bash(git log*)",
-      "Bash(git diff*)",
-      "Bash(git status*)",
-      "Bash(git show*)",
-      "Bash(git branch*)",
-      "Bash(bd show*)",
-      "Bash(bd list*)",
-      "Bash(bd ready*)",
-      "Bash(bd blocked*)",
-      "Bash(bd stats*)",
+      "Bash(cat *)", "Bash(ls)", "Bash(ls *)", "Bash(find *)", "Bash(grep *)",
+      "Bash(head *)", "Bash(tail *)", "Bash(wc *)", "Bash(file *)", "Bash(stat *)",
+      "Bash(pwd)", "Bash(echo *)", "Bash(which *)", "Bash(type *)",
+      "Bash(git log*)", "Bash(git diff*)", "Bash(git status*)", "Bash(git show*)", "Bash(git branch*)",
+      "Bash(bd show*)", "Bash(bd list*)", "Bash(bd ready*)", "Bash(bd blocked*)", "Bash(bd stats*)",
       "Read"
     ]
   }
 }
 ```
 
-`allowedTools` covers `bd` and `code` commands. `permissions.allow` silently allows all read-only shell operations (file inspection, grep, git reads, bd queries) and the `Read` tool so the skills never prompt for codebase exploration.
+This allows `bd`/`code` plus read-only shell (file inspection, grep, git reads, bd queries) so the
+skills never prompt for codebase exploration.
+
+</details>
 
 ### The commands
 
-**Planning model** (any frontier model: Opus / Sonnet / Fable / Mythos / Gemini Pro / GPT-5-class) — authors the *what*:
+On a **frontier model** (Opus / Sonnet / Fable / Gemini Pro / GPT-5-class) — author the *what*:
 
-- **`/case <description>`** → authors one **story** (a precise, verifiable contract), or decomposes
-  a big goal into an **epic** (a dependency graph of stories) for you to review *before* anything is
-  created. Authoring only.
-- **`/refine <id>`** → revises an existing story's contract — applies feedback from a `/solve`
-  spec-gap or an `/evaluate` change-request (or a change you ask for), keeps it WHAT-only, and
-  returns it to ready.
+- **`/case <description>`** → one **story** (a precise, verifiable contract), or a big goal decomposed
+  into an **epic** (a dependency graph of stories) for you to review *before* anything is created.
+- **`/refine <id>`** → revises an existing story's contract from a `/solve` spec-gap, an `/evaluate`
+  change-request, or your own ask — stays WHAT-only, returns it to ready.
 
-**Any model, read-only** — shows your work:
+On a **budget model** (Haiku / Gemini Flash / MiniMax-M3) — do the *how*:
 
-- **`/board`** → the **board**: backlog, in progress, done & awaiting merge, blocked. `/board <id>`
-  shows one story's contract + its comments.
+- **`/solve <id>`** → refuses if the story is blocked; otherwise claims it, works test-first in its
+  own git **worktree+branch**, and stops at *done · review*. Never merges.
 
-**Budget model** (Haiku / Gemini Flash / MiniMax-M3) — does the *how*:
+On **any model**:
 
-- **`/solve <id>`** → refuses with a reason if the story is still blocked; otherwise claims it,
-  works in its own git **worktree+branch** test-first, and stops at *done · review*. Never merges.
+- **`/board`** → backlog, in progress, awaiting merge, blocked. `/board <id>` shows one story.
+- **`/evaluate [<id>]`** → opens the branch in **VSCode** to review the diff, then enacts your
+  verdict: **approve** merges to `main`, closes the story, unblocks dependents; **request changes**
+  sends feedback to `/solve` or `/refine`. Flags skip VSCode: `--approve`, `--request-changes`,
+  `--note <text>` (on either path).
 
-**Review & merge:**
+### Typical flow
 
-- **`/evaluate [<id>]`** → opens the branch in **VSCode** so you review the diff, then enacts your
-  verdict: **approve** → merge to `main`, close the story, unblock dependents; **request changes** →
-  feedback goes back to `/solve` (or `/refine`). Fast-path flags skip the VSCode step: `--approve`
-  merges immediately; `--request-changes` routes straight to the send-back prompt; `--note <text>`
-  attaches a comment to either path.
-
-### Typical flow — worked examples
-
-You are the scheduler: you pick what to author, what to solve, and what to merge. The loop is
-**author → solve → evaluate**, with `/board` to look at your work any time. Three concrete runs:
-
-#### Author one story
-
-On a planning model, capture a task as a precise contract:
+You're the scheduler; the loop is **author → solve → evaluate**, `/board` to look any time.
 
 ```
 /case add a forgot-password reset email flow
 ```
 
-You see: the skill drafts the contract to a transient `.case.md` staging file, may ask one or two
-scoping questions (each with a recommended answer), then waits. When you say *"looks good"*, it
-creates the story and replies with the new id and the next step:
+`/case` drafts the contract to a transient `.case.md`, asks one or two scoping questions, then waits.
+On your *"looks good"* it creates the story and hands you the next step (`/solve <id>`). For a goal
+too big for one pass — `/case ship SSO across the whole app` — it switches to epic mode and shows you
+the full decomposition + dependency graph *before* creating anything.
 
-> Created story **c-fp**. Run `/solve c-fp` on a budget model to build it, or `/board c-fp` to
-> re-read the contract.
-
-At any point, `/board` shows the whole backlog; `/board c-fp` shows just this story.
-
-#### Refine a story back to ready
-
-A story comes back marked `needs-refinement` — a `/solve` hit a spec gap, or `/evaluate` requested a
-change. Revise the *contract* (not the code) on a planning model:
-
-```
-/refine c-fp
-```
-
-You see: the skill reads the reviewer's feedback from the story's comments, rewrites the contract to
-close the gap, and returns the story to ready — then it points you back to `/solve c-fp`.
-
-#### Decompose a large goal into an epic
-
-When a goal is too big for one budget pass, `/case` switches to epic mode and reviews the breakdown
-with you *before* creating anything:
-
-```
-/case ship SSO across the whole app
-```
-
-You see: the skill drafts a decomposition doc to `.case.md` — an ordered set of stories with the
-dependency graph between them (Gate 0). You edit it or approve it; only on your *"go ahead"* does it
-create the stories and links in bd, then reports the new ids. `/board` now shows the epic and which
-stories block which.
-
-#### Then: solve and evaluate
-
-On a budget model, `/solve <id>` each story you want — run several in separate sessions to work in
-parallel, each in its own isolated worktree+branch. `/evaluate <id>` opens the branch in VSCode,
-merges to `main` on approve, and unblocks any dependents. Already reviewed it elsewhere? `/evaluate
-<id> --approve` skips the VSCode step and merges immediately; `/evaluate <id> --request-changes`
-routes straight to the send-back prompt; add `--note <text>` to either to record a comment. `bd`
-enforces dependencies throughout (a blocked story is refused with a reason), so the agents stay
-guardrailed workers.
+Then, on a budget model, `/solve <id>` each story — run several in parallel, each in its own
+worktree+branch. `/evaluate <id>` reviews and merges, unblocking dependents. If a story comes back
+`needs-refinement`, `/refine <id>` rewrites the *contract* (not the code) and returns it to ready.
+`bd` enforces dependencies throughout, so a blocked story is always refused with a reason.
 
 ### Runtime artifacts
 
