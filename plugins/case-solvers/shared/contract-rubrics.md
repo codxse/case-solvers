@@ -99,6 +99,7 @@ Before a story enters bd, scan and strip:
 - Prescribed name for a *new* artifact → abstract to its role.
 - Section outside the template → remove.
 - Problem Statement narrating mechanism → rewrite to outcome.
+- Problem Statement stating only problem + outcome but **not why it matters** → add the why (a story is WHAT *and* WHY).
 - AC failing the rubric → split/add/revise.
 - AC leaking a raw identifier with business meaning → lift to Glossary.
 - AC scenarios **not** inside a fenced ` ```gherkin ` block (bare lines, or relying on trailing-space

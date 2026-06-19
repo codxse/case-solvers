@@ -9,6 +9,18 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-06-19
+
+Plugin & marketplace entry `case-solvers` `2.6.0` → `2.7.0`. (`/case` `2.2.0` → `2.3.0`, `/refine`
+`1.1.1` → `1.2.0`.)
+
+**A story must now state WHY, not just WHAT.** The contract template always asked the Problem
+Statement for "why it must be solved," but nothing enforced it — a story could pass the whole rubric
+with only problem + outcome. The shared **Pre-write Guard** now flags a Problem Statement missing the
+why and requires it added, so the authored contract matches how the workflow is described: a story is
+**WHAT and WHY**, never HOW. Affects both `/case` (new stories) and `/refine` (revisions), which share
+`shared/contract-rubrics.md`.
+
 ## [2.6.0] - 2026-06-18
 
 Plugin & marketplace entry `case-solvers` `2.5.0` → `2.6.0`.
