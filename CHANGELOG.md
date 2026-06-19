@@ -9,6 +9,20 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-06-19
+
+Plugin & marketplace entry `case-solvers` `2.7.0` → `2.8.0`. (`/case` `2.3.0` → `2.4.0`, `/refine`
+`1.2.0` → `1.3.0`.)
+
+**Contract prose is now written unwrapped — one line per paragraph.** Authored stories used to hard-wrap
+Problem Statement / Context / Constraints prose at a column width. That reads fine in a text editor but
+leaves stray line breaks when the contract is pasted into a tool that soft-wraps (Basecamp, Linear,
+GitHub), forcing manual cleanup. The shared **Output Format** now requires each prose paragraph to be a
+single unbroken line, and the **Pre-write Guard** flags hard-wrapped prose so the self-audit joins it
+before commit. Markdown and `bd show` already soft-wrap a long line, so nothing changes on screen. The
+fenced `gherkin` AC block is the sole exception — its internal line breaks are still preserved verbatim.
+Affects both `/case` and `/refine`, which share `shared/contract-rubrics.md`.
+
 ## [2.7.0] - 2026-06-19
 
 Plugin & marketplace entry `case-solvers` `2.6.0` → `2.7.0`. (`/case` `2.2.0` → `2.3.0`, `/refine`

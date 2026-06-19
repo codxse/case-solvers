@@ -105,6 +105,7 @@ Before a story enters bd, scan and strip:
 - AC scenarios **not** inside a fenced ` ```gherkin ` block (bare lines, or relying on trailing-space
   breaks) → wrap them in the fence. This is what holds the Given/When/Then formatting in rendered
   markdown; bare lines collapse to one paragraph.
+- Prose paragraph hard-wrapped across lines → join to one line (see Output Format; `gherkin` block exempt).
 
 Then self-audit: all core sections filled; a Verification mode stated; every named artifact verified
 to exist; solver dry-run each AC (could a budget solver write the test from Given/When/Then +
@@ -115,6 +116,10 @@ Context + Glossary without making an open design decision?). A lurking decision 
 ## Output Format (story body)
 
 Each story's bd body uses this template. Mandatory sections depend on problem type.
+
+**No hard wrapping in prose.** Each paragraph/list-item is **one unbroken line** — never wrap at a
+column width (stray breaks survive a paste into Basecamp/Linear; markdown and `bd show` soft-wrap
+anyway). Blank lines between paragraphs stay. Only the fenced `gherkin` block keeps internal breaks.
 
 ````markdown
 # [Problem Title]
