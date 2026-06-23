@@ -1,7 +1,7 @@
 ---
 name: evaluate
 description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (land it on the branch it was forked from — `main`, `master`, or a feature branch — close, unblock dependents) or request changes. Request changes spawns a frontier-pinned subagent (Opus by default, never the ambient model) that runs /code-review and applies the fixes in place, shows you the applied diff, and amends bd/<id> only after you confirm; a wrong contract instead routes to /refine. --approve lands it on its base branch without opening the diff; --review [effort] runs the code-review pass straight away (default high); --note <text> steers the review and/or annotates the story.'
-version: 1.5.0
+version: 1.6.0
 argument-hint: '[<story-id>] [--approve] [--review [effort]] [--note <text>]'
 disable-model-invocation: true
 user-invocable: true
@@ -31,7 +31,9 @@ Story id: use the argument if supplied. If omitted but a story was mentioned ear
 
 ### 1. Resolve the story
 - No id → show the review & merge queue (`bd list` filtered to `needs-review`) and ask which. Stop.
-- `bd show <id>`. Confirm it is `needs-review`. If not (still in progress, blocked, or already closed) → say its actual state and stop; nothing to evaluate.
+- **Always run `bd show <id>` first** — never assume the story state from session context, memory, or prior conversation. The solver may have finished in a separate session.
+- Check the **labels** in the `bd show <id>` output for `needs-review`. The bd status field (`in_progress`, `open`, etc.) is **separate from labels** — a story with status `in_progress` and label `needs-review` is normal and expected; that is exactly what `/solve` produces when it finishes. Do NOT use the bd status as a proxy for the label, and do NOT interpret `in_progress` status as "story is not done."
+- If the story has no `needs-review` label → report the labels and status you actually saw and stop; nothing to evaluate. Do not stop based on bd status alone.
 
 ### 2. Open the diff for the human (no terminal diff)
 - Surface the solver's review comment: **what was built, how to exercise it, files changed**, and any AC that fell back to a runtime observation or needs a `human`/`both` check.

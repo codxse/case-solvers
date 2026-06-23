@@ -9,6 +9,15 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-06-24
+
+Plugin & marketplace entry `case-solvers` `2.8.0` → `2.9.0`.
+
+**`/evaluate` now always runs `bd show <id>` before making any claim about a story's state.** The previous wording of step 1 let the agent substitute session context or the bd status field for an actual story read — it would see an `in_progress` bd status (which is normal for a story `/solve` has finished) and incorrectly stop with "story is not done." The fix makes `bd show <id>` mandatory with no skip condition, and explicitly separates bd status from labels: `needs-review` is a label, and `in_progress` status alongside a `needs-review` label is the expected output of a finished `/solve` run in a separate session.
+
+### Changed
+- `/evaluate` (`v1.5.0` → `v1.6.0`): step 1 rewritten — `bd show <id>` is mandatory before any verdict; `needs-review` check is now explicitly on the **labels** field, not the bd status; story with status `in_progress` + label `needs-review` is documented as normal.
+
 ## [2.8.0] - 2026-06-19
 
 Plugin & marketplace entry `case-solvers` `2.7.0` → `2.8.0`. (`/case` `2.3.0` → `2.4.0`, `/refine`
