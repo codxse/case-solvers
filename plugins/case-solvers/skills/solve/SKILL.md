@@ -1,7 +1,7 @@
 ---
 name: solve
-description: 'Implement one bd story by id in an isolated git worktree+branch, ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks.'
-version: 1.1.0
+description: 'Implement one bd story by id in an isolated git worktree+branch (created inside the repo at .worktree/<id>), ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks.'
+version: 1.2.0
 argument-hint: '[<story-id>]'
 disable-model-invocation: true
 user-invocable: true
@@ -60,7 +60,7 @@ Check the story's blockers (`bd ready` includes it only if unblocked; else inspe
 
 ### 3. Claim & branch
 - `bd update <id> --claim --assignee claude` then `--status in_progress` (claiming prevents another parallel session from grabbing the same story).
-- **Fresh story** → create the worktree off the repo's **current active branch** — the branch checked out in the main worktree right now (`git branch --show-current`), call it `<base>`. It may be the trunk (`main` or `master`) or a feature branch like `my-branch`; fork from whatever is checked out, **never hardcode `main`/`master`**. Branch `bd/<id>`, worktree at sibling `../<repo>-worktrees/<id>`. Do all work there. `/evaluate` lands the approved story back onto `<base>`, so record `<base>` in the review handoff (step 6).
+- **Fresh story** → create the worktree off the repo's **current active branch** — the branch checked out in the main worktree right now (`git branch --show-current`), call it `<base>`. It may be the trunk (`main` or `master`) or a feature branch like `my-branch`; fork from whatever is checked out, **never hardcode `main`/`master`**. Branch `bd/<id>`, worktree **inside the repo** at `.worktree/<id>` (under the repo root) — keeping it on the same filesystem and permission scope as the project, which avoids the `/tmp`- and parent-dir permission errors a sibling worktree hits. First ensure `.worktree/` is git-excluded so it never surfaces as untracked in the main worktree: append `.worktree/` to `.git/info/exclude` if absent (idempotent, local-only, leaves the tracked `.gitignore` untouched). Do all work there. `/evaluate` lands the approved story back onto `<base>`, so record `<base>` in the review handoff (step 6).
 - **Resuming on an existing branch** (`bd/<id>` already exists — e.g. a contract sent back via `/refine`, or your own earlier in-progress work) → reuse that worktree; read the latest comment (`bd show <id>` includes comments) for the latest direction and address exactly that. Don't recreate the branch. (Implementation-only review fixes no longer come back here — `/evaluate` applies those in place via `/code-review`.)
 - Parallelism = the user runs another `/solve <other-id>` in a separate session; each gets its own worktree.
 
@@ -74,7 +74,7 @@ Before touching code, prove the story is followable. Catching an unfollowable st
 
 All four pass → execute (the sketches become your test plan). Any fail → **do not start coding**:
 - A single discrete question resolves it → ask inline and wait.
-- Structural (too abstract/big, unsettled decision, multiple gaps) → **spec-gap handoff**: `bd label add <id> needs-refinement`; post a `bd comment` listing each failed check concretely + the decomposition/concretization that would fix it; set the story back to open and release the claim (`bd update <id> --status open`); remove the worktree and delete branch `bd/<id>` (`git worktree remove ../<repo>-worktrees/<id>` then `git branch -D bd/<id>` — nothing coded yet, safe to discard); then STOP. Tell the user: `/refine <id>` to refine the contract.
+- Structural (too abstract/big, unsettled decision, multiple gaps) → **spec-gap handoff**: `bd label add <id> needs-refinement`; post a `bd comment` listing each failed check concretely + the decomposition/concretization that would fix it; set the story back to open and release the claim (`bd update <id> --status open`); remove the worktree and delete branch `bd/<id>` (`git worktree remove .worktree/<id>` then `git branch -D bd/<id>` — nothing coded yet, safe to discard); then STOP. Tell the user: `/refine <id>` to refine the contract.
 
 ### 5. Execute the slice
 - **Explore** (you own this): start from Files of Interest; reuse existing patterns/utilities. Honor every Constraint; stay inside Out of Scope.
@@ -118,9 +118,9 @@ When stopped: emit a **Needs Clarification** report — each gap (one line, conc
 | is it ready? | `bd ready` / `bd blocked` |
 | claim | `bd update <id> --claim --assignee claude` |
 | start | `bd update <id> --status in_progress` |
-| isolate (off the current active branch) | capture `<base>` = `git branch --show-current`, then `git worktree add ../<repo>-worktrees/<id> -b bd/<id> <base>` — fork from whatever is checked out now (`main`, `master`, or a feature branch), never hardcode the trunk |
+| isolate (off the current active branch) | from the repo root, ensure `.worktree/` is git-excluded (`grep -qxF '.worktree/' .git/info/exclude \|\| echo '.worktree/' >> .git/info/exclude` — keeps the main worktree clean, leaves the tracked `.gitignore` alone), capture `<base>` = `git branch --show-current`, then `git worktree add .worktree/<id> -b bd/<id> <base>` — fork from whatever is checked out now (`main`, `master`, or a feature branch), never hardcode the trunk |
 | reopen / release claim | `bd update <id> --status open` (confirm claim-release flag via `--help`) |
-| drop worktree (abort) | `git worktree remove ../<repo>-worktrees/<id>` + `git branch -D bd/<id>` |
+| drop worktree (abort) | `git worktree remove .worktree/<id>` + `git branch -D bd/<id>` |
 | spec-gap / clarification | `bd label add <id> needs-refinement` + `bd comment` |
 | done → review | `bd label add <id> needs-review` + `bd comment` (commit on `bd/<id>`) |
 

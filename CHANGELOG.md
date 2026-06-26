@@ -9,6 +9,22 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-06-26
+
+Plugin & marketplace entry `case-solvers` `2.10.0` → `2.11.0`. (`/solve` `1.1.0` → `1.2.0`,
+`/evaluate` `1.6.0` → `1.7.0`.)
+
+**Story worktrees now live inside the repo at `.worktree/<id>`, not at the sibling
+`../<repo>-worktrees/<id>`.** The sibling location put each worktree outside the project root —
+often on a different filesystem or permission scope (or under `/tmp`), which is what produced the
+recurring permission errors during `/evaluate`. `/solve` now creates the worktree at `.worktree/<id>`
+under the repo root, so it shares the project's filesystem and permissions, and `/evaluate` reads,
+reviews, amends, and cleans up at the same path. To keep the main worktree's `git status` clean,
+`/solve` appends `.worktree/` to `.git/info/exclude` before creating the worktree — local and
+idempotent, leaving the tracked `.gitignore` untouched (no stray uncommitted change on the base
+branch). Existing sibling worktrees from older runs are unaffected; the new path applies to
+worktrees created from this version on.
+
 ## [2.10.0] - 2026-06-26
 
 Plugin & marketplace entry `case-solvers` `2.9.0` → `2.10.0`. (`/case` `2.4.0` → `2.5.0`, `/refine`
