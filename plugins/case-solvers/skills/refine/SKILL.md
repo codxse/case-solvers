@@ -1,7 +1,7 @@
 ---
 name: refine
 description: 'Revise an existing bd story contract on a planning model — typically one labelled needs-refinement after a /solve spec-gap or /evaluate change-request. Applies the feedback, stays WHAT-only, returns it to ready for /solve. Use when the user asks to refine/revise/update a story by id.'
-version: 1.3.0
+version: 1.4.0
 argument-hint: '<story-id>'
 user-invocable: true
 ---
@@ -70,10 +70,16 @@ emit the model-guard line and the stop message above, and write nothing.
   underway on branch `bd/<id>`; editing the contract now can strand that work. Say so and proceed only
   on the user's explicit go-ahead. Already `closed` → say so; nothing to refine.
 
-## 2. Load the bars
+## 2. Load the bars — hard gate
 
-Read the shared rubrics — `shared/contract-rubrics.md` at this plugin's root (from this skill folder:
-`@../../shared/contract-rubrics.md`). Authoring principles, AC Quality Rubric, Budget-Solver Fit,
+Read the shared rubrics before revising — **do not edit the contract until the file's contents are in
+context.** It is `contract-rubrics.md` in the plugin's `shared/` directory, a **sibling of the
+`skills/` directory** this skill lives in. From this skill file (`skills/refine/SKILL.md`) that is **two
+levels up** — out of `refine/`, then out of `skills/`, into `shared/`: `../../shared/contract-rubrics.md`.
+Read it with the Read tool. **If the Read errors (`File does not exist`), you miscounted the path —
+never fall back to memory:** re-resolve from this SKILL.md's own absolute directory (up two levels to the
+plugin root, then `shared/contract-rubrics.md`), or locate it (`find` the plugin directory for
+`contract-rubrics.md`) and read that path. Authoring principles, AC Quality Rubric, Budget-Solver Fit,
 Pre-write Guard, and Output Format all apply to the revision exactly as they do to a fresh story.
 
 ## 3. Vet the reason before trusting it

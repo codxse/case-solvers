@@ -9,6 +9,22 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-06-26
+
+Plugin & marketplace entry `case-solvers` `2.9.0` → `2.10.0`. (`/case` `2.4.0` → `2.5.0`, `/refine`
+`1.3.0` → `1.4.0`.)
+
+**The shared-rubrics read is now a fail-loud gate, not a silently-skippable hint.** `/case` and
+`/refine` pointed at `shared/contract-rubrics.md` by relative path (`../../shared/...`); a planning
+model would often miscount the `..` levels, Read `skills/shared/contract-rubrics.md` (which does not
+exist), get *File does not exist*, and then author the contract from memory — the rubric effectively
+skipped with no visible error. Both skills now spell out the path explicitly (two levels up: out of the
+skill folder, out of `skills/`, into `shared/`) and make the read a **hard gate**: on a Read error the
+skill must re-resolve or `find` the file and retry — never fall back to memory. New regression harness
+`plugins/case-solvers/tests/rubric-read.sh` runs `/case` on a planning model and, by inspecting the
+tool stream, asserts a **non-error** Read of `contract-rubrics.md` actually happened (the existing
+`authoring-format.sh` only graded output shape, which a model can fake from memory).
+
 ## [2.9.0] - 2026-06-24
 
 Plugin & marketplace entry `case-solvers` `2.8.0` → `2.9.0`.

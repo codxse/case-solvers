@@ -1,7 +1,7 @@
 ---
 name: case
 description: 'Author one bd story, or decompose a large goal into an epic, on a planning model. Authoring only — view the board with /board, revise an existing story with /refine. Use when the user asks to open/file a case, put a problem or goal "to a case", or write a new story or epic — e.g. "let''s put our problem to a case".'
-version: 2.4.0
+version: 2.5.0
 argument-hint: '<description>'
 user-invocable: true
 ---
@@ -79,9 +79,19 @@ Invoked as `/case <description>` — the whole argument is the description to au
 
 ## Authoring: Story vs Epic
 
-After the guards pass, **read the shared rubrics** (`@../../shared/contract-rubrics.md`): Authoring
-principles, Problem Types, Budget-Solver Fit, Verification Mode, AC Quality Rubric, Pre-write Guard,
-and Output Format — every contract below must satisfy them.
+After the guards pass, **load the shared rubrics — a hard gate: do not draft, decompose, or write
+anything until the file's contents are in context.** The file is `contract-rubrics.md` in the plugin's
+`shared/` directory, a **sibling of the `skills/` directory** this skill lives in. From this skill file
+(`skills/case/SKILL.md`) that is **two levels up** — out of `case/`, then out of `skills/`, into
+`shared/`: `../../shared/contract-rubrics.md`. Read it with the Read tool.
+
+**If the Read errors (`File does not exist`), you miscounted the path — never fall back to memory.**
+Re-resolve from this SKILL.md's own absolute directory: go up two levels to the plugin root, then
+`shared/contract-rubrics.md`. Still failing → locate it (`find` the plugin directory for
+`contract-rubrics.md`, e.g. glob `**/shared/contract-rubrics.md`) and read that path. Authoring before a
+successful read is a defect. The rubrics — Authoring principles, Problem Types, Budget-Solver Fit,
+Verification Mode, AC Quality Rubric, Pre-write Guard, and Output Format — are the bars every contract
+below must satisfy.
 
 Then classify the problem type and draft inference-first: explore the codebase rather than ask when the
 answer is there (budget ~3 Read + 2 Grep when the user names an artifact); settle scope-affecting
