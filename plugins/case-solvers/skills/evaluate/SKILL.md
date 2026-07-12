@@ -1,9 +1,9 @@
 ---
 name: evaluate
 description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (land it on the branch it was forked from — `main`, `master`, or a feature branch — close, unblock dependents) or request changes. Request changes spawns a frontier-pinned subagent (Opus by default, never the ambient model) that runs /code-review and applies the fixes in place, shows you the applied diff, and amends bd/<id> only after you confirm; a wrong contract instead routes to /refine. --approve lands it on its base branch without opening the diff; --review [effort] runs the code-review pass straight away (default high); --note <text> steers the review and/or annotates the story.'
-version: 1.7.0
+version: 1.8.0
 argument-hint: '[<story-id>] [--approve] [--review [effort]] [--note <text>]'
-disable-model-invocation: true
+disable-model-invocation: false
 user-invocable: true
 ---
 

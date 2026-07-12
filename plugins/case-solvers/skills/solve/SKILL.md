@@ -1,9 +1,9 @@
 ---
 name: solve
 description: 'Implement one bd story by id in an isolated git worktree+branch (created inside the repo at .worktree/<id>), ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks.'
-version: 1.2.0
+version: 1.3.0
 argument-hint: '[<story-id>]'
-disable-model-invocation: true
+disable-model-invocation: false
 user-invocable: true
 ---
 

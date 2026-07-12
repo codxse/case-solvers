@@ -3,5 +3,6 @@
 # explicit only, never auto-fired mid-conversation.
 interface:
   display_name: "Evaluate"
+  short_description: "Review and land a completed Beads story"
 policy:
   allow_implicit_invocation: false

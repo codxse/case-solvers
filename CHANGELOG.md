@@ -9,6 +9,18 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-07-12
+
+Plugin & marketplace entry `case-solvers` `2.11.0` → `2.12.0`. (`/solve` `1.2.0` → `1.3.0`,
+`/evaluate` `1.7.0` → `1.8.0`.)
+
+Fixed Codex discovery of the explicit-only `/solve` and `/evaluate` skills. Their shared
+frontmatter now uses the Codex-compatible `disable-model-invocation: false`, while their
+`agents/openai.yaml` files continue to enforce explicit invocation with
+`policy.allow_implicit_invocation: false` and now provide the required short descriptions. The
+Codex plugin manifest also includes the required long description, default prompt, and capability
+metadata.
+
 ## [2.11.0] - 2026-06-26
 
 Plugin & marketplace entry `case-solvers` `2.10.0` → `2.11.0`. (`/solve` `1.1.0` → `1.2.0`,

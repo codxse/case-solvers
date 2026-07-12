@@ -1,16 +1,41 @@
 {
   "name": "case-solvers",
-  "version": "2.11.0",
+  "version": "2.12.0+codex.20260712041617",
   "description": "A bd-backed, parallel-capable coding workflow: /case (frontier model) authors stories/epics in Beads and /refine revises them, /board renders the backlog, /solve (any model tier) implements one in an isolated git worktree, /evaluate merges it after human review. Dependency-aware; bd stays hidden behind the commands. Requires the bd (Beads) CLI.",
-  "author": { "name": "nadiar", "email": "codex@nadiar.id" },
+  "author": {
+    "name": "nadiar",
+    "email": "codex@nadiar.id"
+  },
   "homepage": "https://github.com/codxse/case-solvers",
   "repository": "https://github.com/codxse/case-solvers",
   "license": "MIT",
-  "keywords": ["workflow", "planning", "architect", "case", "refine", "board", "solve", "evaluate", "beads", "bd", "epic", "parallel", "worktree"],
+  "keywords": [
+    "workflow",
+    "planning",
+    "architect",
+    "case",
+    "refine",
+    "board",
+    "solve",
+    "evaluate",
+    "beads",
+    "bd",
+    "epic",
+    "parallel",
+    "worktree"
+  ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Case Solvers",
     "shortDescription": "A bd-backed, parallel-capable coding workflow: author, refine, solve, and evaluate stories.",
+    "longDescription": "Manage a Beads-backed engineering workflow from story authoring through isolated implementation and human-reviewed merge.",
+    "defaultPrompt": "Show the Case Solvers board and help me choose the next appropriate workflow action.",
+    "capabilities": [
+      "Story authoring",
+      "Backlog viewing",
+      "Isolated implementation",
+      "Human review and merge"
+    ],
     "developerName": "nadiar",
     "category": "Productivity"
   }

@@ -9,8 +9,9 @@ OpenAI Codex — their plugin layouts mirror each other, so each plugin carries 
 (`.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`) over the *same* `skills/<name>/SKILL.md`
 files, and the repo carries two marketplaces (`.claude-plugin/marketplace.json`,
 `.agents/plugins/marketplace.json`). Never fork the skill prose per host — edit the one SKILL.md.
-Host-specific bits live outside the prose: Claude's `disable-model-invocation` frontmatter ↔ Codex's
-per-skill `agents/openai.yaml` (`policy.allow_implicit_invocation: false`). The exception is behavioral guards that must hold
+Host-specific invocation policy lives in Codex's per-skill `agents/openai.yaml`
+(`policy.allow_implicit_invocation: false`). Shared frontmatter must keep
+`disable-model-invocation: false` so Codex accepts and discovers the skill. The exception is behavioral guards that must hold
 on a budget model: `plugins/case-solvers/tests/model-guard.sh` runs the authoring commands (`/case`
 and `/refine`) on Haiku headless across multiple trials (including override-injection descriptions)
 and asserts the model-tier guard stops each. It calls the real model, so it's slow and probabilistic
@@ -42,15 +43,15 @@ publish the same two plugins under `plugins/`:
   Claude, GPT-5-class on Codex).
 - **Invocation tracks blast radius, not read/write.** The high-blast-radius commands that bake work
   into a branch — `/solve` (writes code) and `/evaluate` (merges + closes) — are slash-only
-  (`disable-model-invocation` on Claude / `allow_implicit_invocation: false` on Codex) so they never
+  (`allow_implicit_invocation: false` in Codex agent metadata) so they never
   auto-fire mid-conversation. The rest are model-invocable so plain-English asks route to them:
   `/board` (read-only), `/refine` (names an id), and `/case` (authors a new story/epic — a
   plain-English ask like "let's put our problem to a case" should reach it). `/case` and `/refine`
   write to bd but are backstopped the same way: the planning-tier **Model Guard** runs first and
   **nothing is committed to bd until the user confirms**, so an implicit fire can't silently author
   on the wrong tier or without sign-off. Their model-invocable skills carry no
-  `disable-model-invocation` / `allow_implicit_invocation: false` gate (and no `agents/openai.yaml`
-  at all on Codex) — presence of that gate is the at-a-glance marker of a slash-only skill.
+  `allow_implicit_invocation: false` gate (and no `agents/openai.yaml` at all on Codex) — presence
+  of that agent metadata is the at-a-glance marker of a slash-only skill.
 - **bd is the engine, not the interface.** bd (Beads) is the durable issue store, but the
   plugin's end user never types a `bd` command and never sees raw bd output — skills translate
   to/from bd and render human-friendly. Keep bd hidden when editing skill prose. (This is the
