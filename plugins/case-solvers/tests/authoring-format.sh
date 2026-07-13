@@ -111,6 +111,8 @@ run_trial() {
         grep -qF "$sec" <<<"$body" || problems+=("missing section: $sec")
       done
       grep -qE '```gherkin' <<<"$body" || problems+=("AC not in a \`\`\`gherkin fence")
+      grep -qiE '^As an? .+, I want .+,? so that .+' <<<"$body" || problems+=("Problem Statement missing the 'As a …, I want …, so that …' story line")
+      grep -qE '^Feature: ' <<<"$body" || problems+=("gherkin block missing its 'Feature:' title line")
       [ "$ac_count" -eq 1 ] || problems+=("expected 1 story (1 AC block), found $ac_count — over/under-decomposed")
     else # epic
       [ "$ac_count" -ge 2 ] || problems+=("expected an epic decomposition (>=2 AC blocks), found $ac_count — not decomposed")

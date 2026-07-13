@@ -9,6 +9,26 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.13.0] - 2026-07-13
+
+Plugin & marketplace entry `case-solvers` `2.12.0` → `2.13.0`. (`/case` `2.5.0` → `2.6.0`,
+`/refine` `1.4.0` → `1.5.0`.)
+
+**Stories now carry the Cucumber user-story Who/What/Why, and AC blocks open with a `Feature:`
+title.** The shared contract rubrics gain two authoring principles: **Who, What, Why** — the Problem
+Statement must open with the story line `As a <actor>, I want <what>, so that <why>` (actor by
+problem type: Feature/Design — who gets the capability; Bugfix — who the failure blocks; Refactor —
+who maintains the code; Investigation — who the findings inform) — and **INVEST** (Independent,
+Negotiable, Valuable, Estimable, Small, Testable), each letter mapped to the rubric section that
+enforces it. The AC `gherkin` block now opens with a `Feature:` line titling the behavior under
+test, also named by problem type (Bugfix titles the behavior being *restored*, never the bug;
+Refactor the behavior preserved; Investigation the question answered); related scenarios may group
+under `Rule:` lines and repeated steps over many values become a `Scenario Outline` with an
+`Examples` table. The Pre-write Guard checks both additions (missing/vague story line → name the who
+and why; missing `Feature:` title → add it), and `tests/authoring-format.sh` asserts a drafted story
+contains the story line and the `Feature:` title. Goal: any reader — human or budget model — parses
+the same who, what, and why from every story.
+
 ## [2.12.0] - 2026-07-12
 
 Plugin & marketplace entry `case-solvers` `2.11.0` → `2.12.0`. (`/solve` `1.2.0` → `1.3.0`,

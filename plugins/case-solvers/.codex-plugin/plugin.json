@@ -1,6 +1,6 @@
 {
   "name": "case-solvers",
-  "version": "2.12.0+codex.20260712041617",
+  "version": "2.13.0+codex.20260713210625",
   "description": "A bd-backed, parallel-capable coding workflow: /case (frontier model) authors stories/epics in Beads and /refine revises them, /board renders the backlog, /solve (any model tier) implements one in an isolated git worktree, /evaluate merges it after human review. Dependency-aware; bd stays hidden behind the commands. Requires the bd (Beads) CLI.",
   "author": {
     "name": "nadiar",

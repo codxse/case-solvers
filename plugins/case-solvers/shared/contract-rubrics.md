@@ -14,6 +14,8 @@ are identical for both, so they live once, here.
 
 - **Specific ≠ prescriptive.** A story states a testable, unambiguous *outcome* — never the
   mechanism or code.
+- **Who, What, Why.** A story is written for an actor. The Problem Statement opens with one story line — `As a <actor>, I want <what>, so that <why>` — before anything else. A story whose actor or benefit can't be named isn't ready to author.
+- **INVEST.** Every story is **I**ndependent (schedulable alone — a hard ordering belongs in an epic's dependencies), **N**egotiable (outcome, never mechanism), **V**aluable (the `so that` names a real benefit), **E**stimable (grounded and unambiguous enough to size), **S**mall (Budget-Solver Fit), **T**estable (AC Quality Rubric).
 - **No drift.** Don't restate the command, duplicate repo conventions, or add sections outside the
   template.
 - **Diagnosed, not hypothesized.** A Bugfix premise is the *observed* failure, never an inferred
@@ -79,7 +81,7 @@ For each Acceptance Criteria scenario, before it goes into bd:
 
 - **Atomic** — 1 scenario = 1 behavior. Then/And checking 2 separately-failing observables → split.
 - **Self-contained** — readable standalone; if scenarios relate (regression vs new), say so in the
-  title.
+  title or group them under a `Rule:`.
 - **Specific & verifiable** — concrete, deterministically assertable values. No judgment wording.
 - **Observable** — assertion is about externally visible outcome (result state, system state, side
   effect, or absence). A method-call surrogate for an observable in the result = mechanism-bound,
@@ -99,12 +101,13 @@ Before a story enters bd, scan and strip:
 - Prescribed name for a *new* artifact → abstract to its role.
 - Section outside the template → remove.
 - Problem Statement narrating mechanism → rewrite to outcome.
-- Problem Statement stating only problem + outcome but **not why it matters** → add the why (a story is WHAT *and* WHY).
+- Problem Statement not opening with the story line (`As a <actor>, I want <what>, so that <why>`), or an actor/benefit too vague to mean anything ("the user", "better quality") → name the who and the why (a story states WHO, WHAT, *and* WHY).
 - AC failing the rubric → split/add/revise.
 - AC leaking a raw identifier with business meaning → lift to Glossary.
 - AC scenarios **not** inside a fenced ` ```gherkin ` block (bare lines, or relying on trailing-space
   breaks) → wrap them in the fence. This is what holds the Given/When/Then formatting in rendered
   markdown; bare lines collapse to one paragraph.
+- AC `gherkin` block missing its opening `Feature:` title line → add it, titled by problem type (see Output Format).
 - Prose paragraph hard-wrapped across lines → join to one line (see Output Format; `gherkin` block exempt).
 
 Then self-audit: all core sections filled; a Verification mode stated; every named artifact verified
@@ -125,7 +128,9 @@ anyway). Blank lines between paragraphs stay. Only the fenced `gherkin` block ke
 # [Problem Title]
 
 ## Problem Statement
-[One paragraph: the problem, why it must be solved, the desired outcome. State the outcome, don't narrate mechanism.]
+As a [actor], I want [what — the outcome], so that [why — the benefit].
+
+[Then one paragraph: the problem, why it must be solved, the desired outcome. State the outcome, don't narrate mechanism. The actor by type — Feature/Design: who gets the capability; Bugfix: who the observed failure blocks; Refactor: who maintains the code; Investigation: who the findings inform.]
 
 ## Context
 [Background, domain knowledge, classification assumptions. May name existing artifacts as pointers. For an environment-sensitive bug, state facts the solver can't infer from code (proxy/CA, OS/device, pinned versions). Empty if none.]
@@ -140,18 +145,22 @@ anyway). Blank lines between paragraphs stay. Only the fenced `gherkin` block ke
 
 ## Acceptance Criteria
 
-Put **every** scenario inside one fenced `gherkin` block. The fence preserves the line breaks and 2-space indent literally — identical in `bd show` and rendered markdown — so the Given/When/Then never collapse into a run-on line. Never use trailing-space line breaks (invisible, silently dropped). One blank line separates scenarios.
+Put **every** scenario inside one fenced `gherkin` block that opens with a `Feature:` line titling the behavior under test. Title it by problem type — **Feature/Design**: the capability delivered; **Bugfix**: the expected behavior being restored (never the bug); **Refactor**: the behavior preserved; **Investigation**: the question the findings answer. The fence preserves the line breaks and indentation literally — identical in `bd show` and rendered markdown — so the Given/When/Then never collapse into a run-on line. Never use trailing-space line breaks (invisible, silently dropped). One blank line separates scenarios.
+
+Scenarios clustering into distinct behaviors → group each cluster under a `Rule:` line (one business rule each, its scenarios indented beneath it). The same steps repeated over many values → one `Scenario Outline` with an `Examples` table, not near-duplicate scenarios.
 
 ```gherkin
-Scenario: [title]
-  Given [initial condition — specific value, observable state]
-  When [action — callable method, triggerable event]
-  Then [result — observable state, response field, side effect]
+Feature: [behavior under test — titled by problem type]
 
-Scenario: [next edge case — each programmatically verifiable]
-  Given [...]
-  When [...]
-  Then [...]
+  Scenario: [title]
+    Given [initial condition — specific value, observable state]
+    When [action — callable method, triggerable event]
+    Then [result — observable state, response field, side effect]
+
+  Scenario: [next edge case — each programmatically verifiable]
+    Given [...]
+    When [...]
+    Then [...]
 ```
 
 ## Verification
