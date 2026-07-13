@@ -1,7 +1,7 @@
 ---
 name: solve
 description: 'Implement one bd story by id in an isolated git worktree+branch (created inside the repo at .worktree/<id>), ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks.'
-version: 1.3.0
+version: 1.4.0
 argument-hint: '[<story-id>]'
 disable-model-invocation: false
 user-invocable: true
@@ -13,13 +13,16 @@ Run as a budget-conscious solver. Read one story's contract from **bd** (the **W
 
 **bd is the engine, not the interface.** The user typed `/solve <id>`; never show raw `bd` commands or output — translate (claim, status, labels, comments) and render human-friendly. Use the bd/git map below; if a flag is uncertain or a command errors, run `bd <cmd> --help`.
 
-## Cost Guard — Run First
+## Model Check — Run First
 
-`/solve` is designed for a **budget model** but runs on any. Check your model from your system prompt. On a frontier-tier model (Opus/Sonnet/Fable/Mythos/Gemini Pro-class), warn once, then continue:
+`/solve` is designed for a **budget model** but runs on any. Read your model ID from your system prompt and derive two things:
+
+- **Your solver name** — the model's short class name (`haiku`, `sonnet`, `opus`, `fable`, `gpt-5.6-sol`, …), used as the bd assignee at claim time (step 3) so the story records which model picked it up.
+- **Your tier.** On a frontier-tier model (Opus/Sonnet/Fable/Mythos/GPT-5/Gemini Pro-class), warn once, then continue:
 
 > You're running `/solve` on `<model>` (expensive). Cheaper: `/clear`, then switch to a budget model via `/model`. Continuing now is fine too.
 
-Any other model → proceed, no warning. This warns; it never blocks.
+Any other model → proceed, no warning. This warns; it never blocks — but continuing on a frontier tier puts the **Senior Solver rules** (below) in effect for the whole run.
 
 ## Environment Guard — Run Second
 
@@ -29,6 +32,14 @@ Any other model → proceed, no warning. This warns; it never blocks.
 
 - The architect (`/case`, planning model) defined WHAT: Problem Statement, Constraints, Acceptance Criteria, Out of Scope.
 - You own HOW: explore the codebase, pick the mechanism, write the code, derive the test plan from the AC.
+
+## Senior Solver Rules — frontier tier only
+
+The contract is written for a budget solver — a junior engineer who follows it literally. A frontier model on the same story is the senior picking up the same ticket: **the ticket does not grow.** If a budget model's implementation would pass `/evaluate`, yours must pass the same review — with better craft, not more surface.
+
+- **Same scope, better craft.** Extra capability goes into quality *within* the AC — sharper naming, tighter tests, cleaner fit with existing patterns — never into features, abstractions, or "improvements" the contract doesn't ask for. Out of Scope binds every tier equally.
+- **Delegate exploration, keep decisions.** Don't page through the codebase on frontier tokens. Dispatch a read-only exploration subagent on the cheapest tier your host offers (Claude Code: the `Explore` agent type with `model: haiku`), seeded with the story's Files of Interest and the concrete questions you need answered (where the named artifacts live, which existing patterns/utilities apply, what the test harness looks like); it returns the map, you make every decision. Host has no subagents → explore yourself, but start from Files of Interest and read only what the AC needs.
+- **Report, don't fix, what you notice.** A senior sees more: bugs adjacent to the change, contract ambiguities that didn't block you, refactors worth doing. None of it enters the diff. Collect each as a one-liner for the **Recommendations** section of the review handoff (step 6), so the reviewer can address it there or split it into its own story.
 
 ## The Story Outranks This Skill
 
@@ -59,7 +70,7 @@ Check the story's blockers (`bd ready` includes it only if unblocked; else inspe
   If two or more blockers are mutually independent, add that they can be solved in parallel. Each blocker still passes its own `/evaluate` merge before this story unblocks, so the chain can't run away. Proceed only on the user's go-ahead, and only on a blocker that is itself ready.
 
 ### 3. Claim & branch
-- `bd update <id> --claim --assignee claude` then `--status in_progress` (claiming prevents another parallel session from grabbing the same story).
+- `bd update <id> --claim --assignee <solver-name>` then `--status in_progress` — `<solver-name>` is your model class from the Model Check (`haiku`, `opus`, `gpt-5.6-sol`, …), so the story records which model picked it up. Claiming prevents another parallel session from grabbing the same story.
 - **Fresh story** → create the worktree off the repo's **current active branch** — the branch checked out in the main worktree right now (`git branch --show-current`), call it `<base>`. It may be the trunk (`main` or `master`) or a feature branch like `my-branch`; fork from whatever is checked out, **never hardcode `main`/`master`**. Branch `bd/<id>`, worktree **inside the repo** at `.worktree/<id>` (under the repo root) — keeping it on the same filesystem and permission scope as the project, which avoids the `/tmp`- and parent-dir permission errors a sibling worktree hits. First ensure `.worktree/` is git-excluded so it never surfaces as untracked in the main worktree: append `.worktree/` to `.git/info/exclude` if absent (idempotent, local-only, leaves the tracked `.gitignore` untouched). Do all work there. `/evaluate` lands the approved story back onto `<base>`, so record `<base>` in the review handoff (step 6).
 - **Resuming on an existing branch** (`bd/<id>` already exists — e.g. a contract sent back via `/refine`, or your own earlier in-progress work) → reuse that worktree; read the latest comment (`bd show <id>` includes comments) for the latest direction and address exactly that. Don't recreate the branch. (Implementation-only review fixes no longer come back here — `/evaluate` applies those in place via `/code-review`.)
 - Parallelism = the user runs another `/solve <other-id>` in a separate session; each gets its own worktree.
@@ -77,7 +88,7 @@ All four pass → execute (the sketches become your test plan). Any fail → **d
 - Structural (too abstract/big, unsettled decision, multiple gaps) → **spec-gap handoff**: `bd label add <id> needs-refinement`; post a `bd comment` listing each failed check concretely + the decomposition/concretization that would fix it; set the story back to open and release the claim (`bd update <id> --status open`); remove the worktree and delete branch `bd/<id>` (`git worktree remove .worktree/<id>` then `git branch -D bd/<id>` — nothing coded yet, safe to discard); then STOP. Tell the user: `/refine <id>` to refine the contract.
 
 ### 5. Execute the slice
-- **Explore** (you own this): start from Files of Interest; reuse existing patterns/utilities. Honor every Constraint; stay inside Out of Scope.
+- **Explore** (you own this): start from Files of Interest; reuse existing patterns/utilities. Honor every Constraint; stay inside Out of Scope. On a frontier tier, this is the step you delegate to the cheap exploration subagent (Senior Solver rules) — the findings come back to you; the mechanism choice stays yours.
 - **Plan**: brief, verifiable, assumptions surfaced. A step with no clear verify → contract too weak → Needs Clarification (see *Stop on Ambiguity* below).
 - **Diagnose before fixing** (Bugfix): the contract states a *suspected* cause — treat it as a lead. Reproduce and capture the real signal (exception+stack, failing assertion, real status/body, the log at the failure point) before editing. Device/integration bug you can't unit-test → your first change is the minimum logging to surface what actually happens, not a behavior change. Captured signal contradicts the stated cause → the contract is wrong: Needs Clarification, not more guessing. Don't grind on an unobserved cause.
 - **TDD**: translate the machine-assertable AC into test(s) → run red → implement minimum to green → refactor within the slice, staying green.
@@ -89,7 +100,7 @@ All four pass → execute (the sketches become your test plan). Any fail → **d
 ### 6. Hand to review — never merge
 When the AC pass:
 - Commit on branch `bd/<id>`.
-- `bd label add <id> needs-review` and post a `bd comment` summarising for the reviewer: **Base branch:** `<base>` (the branch this was forked from — where `/evaluate` lands it on approve), **what was built + how to exercise it** (for a `human`/`both` Verification, spell out exactly what a person should check and the command/screen/input), **files changed** (one line each, every line traceable to an AC), and any AC that fell back to a runtime observation.
+- `bd label add <id> needs-review` and post a `bd comment` summarising for the reviewer: **Base branch:** `<base>` (the branch this was forked from — where `/evaluate` lands it on approve), **what was built + how to exercise it** (for a `human`/`both` Verification, spell out exactly what a person should check and the command/screen/input), **files changed** (one line each, every line traceable to an AC), and any AC that fell back to a runtime observation. If you noticed anything out of scope while working — an adjacent bug, an unclear contract spot, a refactor worth doing — close the comment with a **Recommendations** section, one line each, explicitly *not implemented*: the reviewer decides whether to address it at `/evaluate` or file it as a separate story. No observations → omit the section.
 - **Do not close, do not merge.** Tell the user:
   > Story `<id>` done, on branch `bd/<id>`, now in **DONE · review & merge**. Run `/evaluate <id>` to review the diff in VSCode and merge.
 
@@ -107,7 +118,7 @@ When stopped: emit a **Needs Clarification** report — each gap (one line, conc
 
 - **Think before coding.** State assumptions; surface multiple interpretations instead of picking silently; name a simpler approach if one exists.
 - **Simplicity first.** Minimum code that satisfies the AC. Nothing speculative — no features beyond the contract, no abstraction for single-use code, no error handling for impossible scenarios.
-- **Surgical changes.** Touch only what an AC requires. Match existing style. Remove only the orphans your change created; spot unrelated dead code → mention, don't delete.
+- **Surgical changes.** Touch only what an AC requires. Match existing style. Remove only the orphans your change created; spot unrelated dead code → mention (Recommendations, step 6), don't delete.
 - **Goal-driven execution.** AC are the success criteria. Plan with a verify per step, loop until verified — bounded by the loop guard.
 
 ## bd / git map (confirm flags via `--help`)
@@ -116,7 +127,7 @@ When stopped: emit a **Needs Clarification** report — each gap (one line, conc
 |---|---|
 | read story | `bd show <id>` |
 | is it ready? | `bd ready` / `bd blocked` |
-| claim | `bd update <id> --claim --assignee claude` |
+| claim | `bd update <id> --claim --assignee <solver-name>` (your model class: `haiku`, `opus`, `gpt-5.6-sol`, …) |
 | start | `bd update <id> --status in_progress` |
 | isolate (off the current active branch) | from the repo root, ensure `.worktree/` is git-excluded (`grep -qxF '.worktree/' .git/info/exclude \|\| echo '.worktree/' >> .git/info/exclude` — keeps the main worktree clean, leaves the tracked `.gitignore` alone), capture `<base>` = `git branch --show-current`, then `git worktree add .worktree/<id> -b bd/<id> <base>` — fork from whatever is checked out now (`main`, `master`, or a feature branch), never hardcode the trunk |
 | reopen / release claim | `bd update <id> --status open` (confirm claim-release flag via `--help`) |

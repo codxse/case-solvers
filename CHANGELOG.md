@@ -9,6 +9,25 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.15.0] - 2026-07-13
+
+Plugin & marketplace entry `case-solvers` `2.14.0` → `2.15.0`. (`/solve` `1.3.0` → `1.4.0`.)
+
+**`/solve` now adapts to the model running it without ever growing the ticket.** The Cost Guard
+becomes a **Model Check** that derives two things from the system prompt's model ID: the solver's
+short class name (`haiku`, `opus`, `fable`, `gpt-5.6-sol`, …) — now used as the bd assignee at claim
+time instead of the hardcoded `claude`, so the story records which model picked it up — and the
+tier. A frontier tier still gets the one-time cost warning, but continuing now puts the new
+**Senior Solver rules** in effect: same scope, better craft (extra capability goes into quality
+*within* the AC, never into features or abstractions the contract doesn't ask for — the junior's
+ticket doesn't grow for the senior); exploration is delegated to a read-only subagent on the
+cheapest tier the host offers (Claude Code: `Explore` on Haiku), seeded with Files of Interest and
+the concrete questions to answer, rather than paging through the codebase on frontier tokens; and
+out-of-scope observations — adjacent bugs, contract ambiguities, worthwhile refactors — are
+reported, never fixed. The step-6 review handoff gains an optional **Recommendations** section
+(one line each, explicitly *not implemented*) so the reviewer can address each item at `/evaluate`
+or file it as a separate story.
+
 ## [2.14.0] - 2026-07-13
 
 Plugin & marketplace entry `case-solvers` `2.13.0` → `2.14.0`. (`/case` `2.6.0` → `2.7.0`,
