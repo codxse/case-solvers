@@ -1,7 +1,7 @@
 ---
 name: solve
 description: 'Implement one bd story by id in an isolated git worktree+branch (created inside the repo at .worktree/<id>), ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks.'
-version: 1.4.0
+version: 1.4.1
 argument-hint: '[<story-id>]'
 disable-model-invocation: false
 user-invocable: true
@@ -38,7 +38,7 @@ Any other model → proceed, no warning. This warns; it never blocks — but con
 The contract is written for a budget solver — a junior engineer who follows it literally. A frontier model on the same story is the senior picking up the same ticket: **the ticket does not grow.** If a budget model's implementation would pass `/evaluate`, yours must pass the same review — with better craft, not more surface.
 
 - **Same scope, better craft.** Extra capability goes into quality *within* the AC — sharper naming, tighter tests, cleaner fit with existing patterns — never into features, abstractions, or "improvements" the contract doesn't ask for. Out of Scope binds every tier equally.
-- **Delegate exploration, keep decisions.** Don't page through the codebase on frontier tokens. Dispatch a read-only exploration subagent on the cheapest tier your host offers (Claude Code: the `Explore` agent type with `model: haiku`), seeded with the story's Files of Interest and the concrete questions you need answered (where the named artifacts live, which existing patterns/utilities apply, what the test harness looks like); it returns the map, you make every decision. Host has no subagents → explore yourself, but start from Files of Interest and read only what the AC needs.
+- **Delegate exploration, keep decisions.** Keep codebase paging out of the senior solver's decision context. Dispatch the host's exploration-specialist subagent when available; otherwise dispatch a general subagent with the same bounded brief. Give it a strictly read-only task — search, inspect, and report; no edits, implementation, or mechanism decisions — and use the model suited to read-heavy exploration, not simply the cheapest model available (Claude Code: the `Explore` agent type with `model: haiku`; Codex: the built-in `explorer` agent). Seed it with the story's Files of Interest and the concrete questions you need answered (where the named artifacts live, which existing patterns/utilities apply, what the test harness looks like); it returns the map, you make every decision. Host has no subagents → explore yourself, but start from Files of Interest and read only what the AC needs.
 - **Report, don't fix, what you notice.** A senior sees more: bugs adjacent to the change, contract ambiguities that didn't block you, refactors worth doing. None of it enters the diff. Collect each as a one-liner for the **Recommendations** section of the review handoff (step 6), so the reviewer can address it there or split it into its own story.
 
 ## The Story Outranks This Skill
@@ -88,7 +88,7 @@ All four pass → execute (the sketches become your test plan). Any fail → **d
 - Structural (too abstract/big, unsettled decision, multiple gaps) → **spec-gap handoff**: `bd label add <id> needs-refinement`; post a `bd comment` listing each failed check concretely + the decomposition/concretization that would fix it; set the story back to open and release the claim (`bd update <id> --status open`); remove the worktree and delete branch `bd/<id>` (`git worktree remove .worktree/<id>` then `git branch -D bd/<id>` — nothing coded yet, safe to discard); then STOP. Tell the user: `/refine <id>` to refine the contract.
 
 ### 5. Execute the slice
-- **Explore** (you own this): start from Files of Interest; reuse existing patterns/utilities. Honor every Constraint; stay inside Out of Scope. On a frontier tier, this is the step you delegate to the cheap exploration subagent (Senior Solver rules) — the findings come back to you; the mechanism choice stays yours.
+- **Explore** (you own this): start from Files of Interest; reuse existing patterns/utilities. Honor every Constraint; stay inside Out of Scope. On a frontier tier, this is the step you delegate to the exploration-specialist subagent (Senior Solver rules) — the findings come back to you; the mechanism choice stays yours.
 - **Plan**: brief, verifiable, assumptions surfaced. A step with no clear verify → contract too weak → Needs Clarification (see *Stop on Ambiguity* below).
 - **Diagnose before fixing** (Bugfix): the contract states a *suspected* cause — treat it as a lead. Reproduce and capture the real signal (exception+stack, failing assertion, real status/body, the log at the failure point) before editing. Device/integration bug you can't unit-test → your first change is the minimum logging to surface what actually happens, not a behavior change. Captured signal contradicts the stated cause → the contract is wrong: Needs Clarification, not more guessing. Don't grind on an unobserved cause.
 - **TDD**: translate the machine-assertable AC into test(s) → run red → implement minimum to green → refactor within the slice, staying green.

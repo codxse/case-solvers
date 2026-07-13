@@ -9,6 +9,18 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.15.1] - 2026-07-13
+
+Plugin & marketplace entry `case-solvers` `2.15.0` → `2.15.1`. (`/solve` `1.4.0` → `1.4.1`.)
+
+**Senior Solver exploration now selects for role fit, not lowest price.** The shared `/solve` prose
+now tells both hosts how to keep codebase paging out of the senior solver's decision context:
+Claude Code dispatches its `Explore` agent on Haiku, while Codex dispatches its built-in `explorer`
+agent; a host without named roles may give the same bounded brief to a general subagent. The task is
+explicitly read-only — search, inspect, and report, with no edits, implementation, or mechanism
+decisions — and uses the model suited to read-heavy exploration rather than whichever model is
+merely cheapest. A host with no subagents still explores inline from Files of Interest.
+
 ## [2.15.0] - 2026-07-13
 
 Plugin & marketplace entry `case-solvers` `2.14.0` → `2.15.0`. (`/solve` `1.3.0` → `1.4.0`.)
