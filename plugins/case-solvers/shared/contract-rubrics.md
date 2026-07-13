@@ -83,6 +83,7 @@ For each Acceptance Criteria scenario, before it goes into bd:
 - **Self-contained** — readable standalone; if scenarios relate (regression vs new), say so in the
   title or group them under a `Rule:`.
 - **Specific & verifiable** — concrete, deterministically assertable values. No judgment wording.
+- **Declarative** — steps state business-level actions in third person, naming the story line's actor — never "I", never UI mechanics ("clicks the button", "types into the field"). Litmus: wording that must change when the implementation changes → rework. Specific values stay (there are no step definitions to hide them in): "When Bob logs in with password `hunter2`" is declarative *and* deterministic.
 - **Observable** — assertion is about externally visible outcome (result state, system state, side
   effect, or absence). A method-call surrogate for an observable in the result = mechanism-bound,
   revise.
@@ -108,6 +109,7 @@ Before a story enters bd, scan and strip:
   breaks) → wrap them in the fence. This is what holds the Given/When/Then formatting in rendered
   markdown; bare lines collapse to one paragraph.
 - AC `gherkin` block missing its opening `Feature:` title line → add it, titled by problem type (see Output Format).
+- AC step written as "I" or narrating UI mechanics → rewrite declarative, third person, actor named.
 - Prose paragraph hard-wrapped across lines → join to one line (see Output Format; `gherkin` block exempt).
 
 Then self-audit: all core sections filled; a Verification mode stated; every named artifact verified
@@ -154,7 +156,7 @@ Feature: [behavior under test — titled by problem type]
 
   Scenario: [title]
     Given [initial condition — specific value, observable state]
-    When [action — callable method, triggerable event]
+    When [action — business-level, third person naming the actor; a callable method or triggerable event, never UI mechanics or "I"]
     Then [result — observable state, response field, side effect]
 
   Scenario: [next edge case — each programmatically verifiable]

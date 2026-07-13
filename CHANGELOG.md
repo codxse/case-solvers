@@ -9,6 +9,22 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.14.0] - 2026-07-13
+
+Plugin & marketplace entry `case-solvers` `2.13.0` → `2.14.0`. (`/case` `2.6.0` → `2.7.0`,
+`/refine` `1.5.0` → `1.6.0`.)
+
+**AC steps are now declarative and third person, per Cucumber's Better Gherkin guidance.** The AC
+Quality Rubric gains a **Declarative** bar: steps state business-level actions naming the story
+line's actor — never "I", never UI mechanics ("clicks the button", "types into the field") — with
+the litmus test *wording that must change when the implementation changes → rework*. Specific
+values deliberately stay (a divergence from Cucumber's fully-declarative style, which relies on
+step definitions to hold the details; these scenarios have none — a budget solver derives tests
+directly from them, so hiding values would force it to invent them). The Pre-write Guard checks the
+new bar. Also fixed the Codex marketplace (`.agents/plugins/marketplace.json`): its plugin entries
+carried no `version` field, so Codex installs couldn't be tied to a release — both entries now
+version in lockstep with the other three manifests.
+
 ## [2.13.0] - 2026-07-13
 
 Plugin & marketplace entry `case-solvers` `2.12.0` → `2.13.0`. (`/case` `2.5.0` → `2.6.0`,
