@@ -36,11 +36,11 @@ Story id: use the argument if supplied. If omitted but a story was mentioned ear
 - If the story has no `needs-review` label → report the labels and status you actually saw and stop; nothing to evaluate. Do not stop based on bd status alone.
 
 ### 2. Open the diff for the human (no terminal diff)
-- Surface the solver's review comment: **what was built, how to exercise it, files changed**, and any AC that fell back to a runtime observation or needs a `human`/`both` check.
+- Surface the solver's review comment: **what was built, how to exercise it, files changed**, and any AC that fell back to a runtime observation or needs a `human`/`auto+human` check.
 - Open the branch in VSCode for review:
   - `code .worktree/<id>` (the story's worktree on branch `bd/<id>`, inside the repo under the repo root — run from there).
   - `code` not on PATH → print the worktree path and branch name and the command `git diff <base>...bd/<id>` (`<base>` = the story's base branch, read per step 4a), and let the user review in their own tool.
-- For a `human`/`both` Verification story, remind the user to actually exercise the running system per the solver's instructions, not just read the diff.
+- For a `human`/`auto+human` Verification story, remind the user to actually exercise the running system per the solver's instructions, not just read the diff.
 
 ### 3. Ask the verdict
 Ask plainly: **approve & merge**, or **request changes**? Do not push an opinion on the code.

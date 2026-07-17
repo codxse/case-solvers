@@ -21,7 +21,7 @@ relative path in skill prose resolves against the *user's* working directory, no
 - **Specific ≠ prescriptive.** A story states a testable, unambiguous *outcome* — never the
   mechanism or code.
 - **Who, What, Why.** A story is written for an actor. The Problem Statement opens with one story line — `As a <actor>, I want <what>, so that <why>` — before anything else. A story whose actor or benefit can't be named isn't ready to author.
-- **INVEST.** Every story is **I**ndependent (schedulable alone — a hard ordering belongs in an epic's dependencies), **N**egotiable (outcome, never mechanism), **V**aluable (the `so that` names a real benefit), **E**stimable (grounded and unambiguous enough to size), **S**mall (Budget-Solver Fit), **T**estable (AC Quality Rubric).
+- **INVEST.** Every story is **I**ndependent (schedulable alone — a hard ordering belongs in an epic's dependencies), **N**egotiable (outcome, never mechanism), **V**aluable (the `so that` names a real benefit), **E**stimable (grounded and unambiguous enough to size — Budget-Solver Fit's unsettled middle), **S**mall (Budget-Solver Fit's too big), **T**estable (AC Quality Rubric).
 - **No drift.** Don't restate the command, duplicate repo conventions, or add sections outside the
   template.
 - **Diagnosed, not hypothesized.** A Bugfix premise is the *observed* failure, never an inferred
@@ -49,16 +49,20 @@ Criteria, Verification, Out of Scope.
 
 ## Budget-Solver Fit
 
-Size every story for a budget model — limited context and reasoning — regardless of which model
-runs `/solve`.
+A story fits a budget solver when its **scope is bounded** and **nothing inside it is left
+undecided** — no open design decision, no unconfirmed cause. Either failure — too big, or a gap in
+the middle — and the solver drifts. Size *and* settle every story for a budget model, regardless of
+which model runs `/solve`.
 
-**Too-large signals** (any → decompose into an epic, or split the story):
+**Too big (scope)** — any → decompose into an epic, or split the story:
 - Spans multiple independent capabilities or subsystems.
 - More than ~6–8 AC scenarios across unrelated behaviors.
 - A single AC implies a whole subsystem, not one observable behavior.
 - Cross-cutting change touching many files/layers at once.
+
+**Unsettled middle (ambiguity)** — any → settle it in the contract, or split it out:
 - An AC whose test forces a design decision the contract doesn't settle (invent an API shape, pick
-  a data model, choose where state lives) — settle it or split.
+  a data model, choose where state lives).
 - **Bugfix whose root cause isn't reproduced and confirmed.** Diagnosing an unknown failure is what
   budget models are worst at. While the cause is a hypothesis, make diagnosis its own story for a
   planning model (Verification: human); the budget solver gets only the mechanical fix once the
@@ -69,14 +73,16 @@ runs `/solve`.
 ## Verification Mode
 
 Every story states a `Verification` mode telling downstream whether a human checkpoint is needed:
-`auto`, `human`, or `both`. (In this workflow every story is also reviewed at `/evaluate` before
-merge; `Verification` is about whether the *solver* needs a person mid-slice.)
+`auto`, `human`, or `auto+human`. (In this workflow every story is also reviewed at `/evaluate`
+before merge; `Verification` is about whether the *solver* needs a person mid-slice.)
 
 - **`human`** — acceptance observed by a person exercising the running system, or needs judgment a
   machine can't make (user-facing surface; qualitative: looks/feels right, UX, copy, layout).
 - **`auto`** — fully machine-assertable, no experiential dimension (pure refactor keeps tests green;
   exact/high-volume assertions; internal contract with no surface yet).
-- **`both`** — has a machine-assertable part AND an experiential part.
+- **`auto+human`** — the story has both a machine-assertable part and an experiential one: the
+  solver auto-verifies the assertable part and spells out the experiential part for a person to
+  exercise at `/evaluate`.
 - **Default when ambiguous → `human`.**
 
 ---
@@ -176,7 +182,7 @@ Feature: [behavior under test — titled by problem type]
 ```
 
 ## Verification
-Verification: [auto | human | both]   — [human/both: what a person checks + how to exercise it]
+Verification: [auto | human | auto+human]   — [human/auto+human: what a person checks + how to exercise it]
 
 ## Out of Scope
 - [Explicit things not done here]

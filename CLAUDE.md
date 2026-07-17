@@ -75,6 +75,11 @@ publish the same two plugins under `plugins/`:
   the one test wired into CI (`.github/workflows/checks.yml`, on push + PR): both hosts install this
   plugin by copying the repo, with no build step between a commit and a user, so drift on `master` is
   drift that ships. CI is the only gate there is.
+  - **`--write` only propagates the shared block.** If a rubric edit renames a *token* that other
+    skills cite in their own prose — e.g. a `Verification` value like `auto+human`, which `/solve` and
+    `/evaluate` reference *outside* the generated block — those call sites won't move with the sync.
+    `grep` the whole plugin for the old token and fix them by hand, or the skills drift out of step
+    with the rubric while `rubrics-sync.sh` still reports green.
   - **Why inlined, not read.** The rubrics are a hard gate — every `/case` and `/refine` invocation
     needs them — so a runtime read saves no context and costs a path that can't resolve reliably: a
     relative path in skill prose resolves against the *user's* CWD, not the plugin dir, and
