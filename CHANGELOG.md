@@ -9,6 +9,38 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.17.1] - 2026-07-17
+
+Plugin & marketplace entry `case-solvers` `2.17.0` → `2.17.1`. `/case` (2.8.0 → 2.8.1), `/refine`
+(1.7.0 → 1.7.1).
+
+**Changed: the `Budget-Solver Fit` rubric now splits its signals along two labeled axes.** The
+section's checklist was headed "Too-large signals", but two of its bullets — an AC that forces an
+unsettled design decision, and a bugfix whose root cause isn't reproduced — are not size signals at
+all; they are *ambiguity* signals (a gap in the middle of an otherwise-small story). Filed under a
+"too-large" heading, an author sizing a small-but-ambiguous story could correctly conclude "not too
+large" and skip past exactly the two checks that most reliably make a budget solver drift. The
+signals are now two groups — **Too big (scope)** (→ decompose or split) and **Unsettled middle
+(ambiguity)** (→ settle in the contract or split out) — under an opening line that names both axes as
+co-equal ("scope is bounded *and* nothing inside is left undecided"). The INVEST line's mapping is
+corrected to match: **E**stimable now carries the ambiguity axis, **S**mall the scope axis. Rubric
+wording only — the section name is unchanged, so nothing else references break.
+
+**Changed: the `both` Verification mode is renamed `auto+human`, and its definition now states the
+action, not just the composition.** `both` is relational — it means nothing until the other two modes
+are memorized — and the token travels into a story body, where the budget solver reading it never sees
+the rubric that defines it. `auto+human` names its own constituents, so it reads clearly wherever it
+appears. Its definition moves from "has a machine-assertable part AND an experiential part" to the
+resulting split: the solver auto-verifies the assertable part and spells out the experiential part for
+a person to exercise at `/evaluate`. Unlike the rename-free change above, `/solve` and `/evaluate`
+cite the mode by name *outside* the shared rubric block, so their `` `human`/`both` `` call sites were
+updated by hand to `` `human`/`auto+human` ``.
+
+**Docs: `CLAUDE.md` gains the caveat those hand-edits taught.** `rubrics-sync.sh --write` propagates
+only the shared block, so a rubric edit that renames a token other skills cite in their own prose (the
+`auto+human` rename is the worked example) needs those call sites fixed by hand — the sync still
+reports green while the skills drift out of step with the rubric.
+
 ## [2.17.0] - 2026-07-17
 
 Plugin & marketplace entry `case-solvers` `2.16.0` → `2.17.0`. `/case` (2.7.1 → 2.8.0), `/refine`
