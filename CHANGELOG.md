@@ -9,6 +9,17 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.15.2] - 2026-07-17
+
+Plugin & marketplace entry `case-solvers` `2.15.1` → `2.15.2`. (`/case` `2.7.0` → `2.7.1`, `/refine`
+`1.6.0` → `1.6.1`.)
+
+**Story-line template now breaks across three lines.** The shared `Output Format` template in
+`contract-rubrics.md` renders the opening `As a / I want / so that` statement as three one-line
+paragraphs (blank-line separated) instead of one run-on sentence, for readability — still compliant
+with the existing "no hard-wrap, one paragraph per line" rule since each clause is its own unbroken
+paragraph.
+
 ## [2.15.1] - 2026-07-13
 
 Plugin & marketplace entry `case-solvers` `2.15.0` → `2.15.1`. (`/solve` `1.4.0` → `1.4.1`.)

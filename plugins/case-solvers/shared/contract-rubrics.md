@@ -130,7 +130,11 @@ anyway). Blank lines between paragraphs stay. Only the fenced `gherkin` block ke
 # [Problem Title]
 
 ## Problem Statement
-As a [actor], I want [what — the outcome], so that [why — the benefit].
+As a [actor],
+
+I want [what — the outcome],
+
+so that [why — the benefit].
 
 [Then one paragraph: the problem, why it must be solved, the desired outcome. State the outcome, don't narrate mechanism. The actor by type — Feature/Design: who gets the capability; Bugfix: who the observed failure blocks; Refactor: who maintains the code; Investigation: who the findings inform.]
 
