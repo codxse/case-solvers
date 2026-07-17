@@ -73,6 +73,8 @@ solve many in parallel — but you never type a `bd` command. The skills keep it
 
 ## Install
 
+Same two plugins on either host. Add the marketplace once, then install what you want.
+
 **Claude Code**
 
 ```
@@ -80,6 +82,9 @@ solve many in parallel — but you never type a `bd` command. The skills keep it
 /plugin install case-solvers@case-solvers
 /plugin install writing-claude-md@case-solvers
 ```
+
+Type the commands in a Claude Code session (not your shell). `/plugin` on its own opens the plugin
+browser if you'd rather click. Verify with `/help` — the new commands appear in the list.
 
 **Codex**
 
@@ -89,11 +94,30 @@ codex plugin add case-solvers@case-solvers
 codex plugin add writing-claude-md@case-solvers
 ```
 
-> **Install the plugin, not loose skill folders.** `/case` and `/refine` read shared rubrics at the
-> plugin root (`../../shared/...`); plugin installs copy the whole directory, so this resolves.
-> Copying only `skills/<name>/` leaves the rubrics behind and breaks both commands.
+These run in your shell, not in a Codex session, and need a Codex CLI new enough to have the plugin
+subcommand — check with `codex plugin --help`. Verify the install with `codex plugin list`.
 
-**Gating:** `/case` and `/refine` require a **frontier model**; `/solve` runs on any tier.
+On Codex, `/solve` and `/evaluate` are **slash-only** — they bake work into a branch, so they never
+auto-fire mid-conversation. `/case`, `/refine`, and `/board` also answer plain English ("put this to
+a case", "show the board").
+
+**Requirements:** the `bd` CLI on your `PATH` for `case-solvers` — see
+[the command reference below](#case-solvers--bd-backed-parallel-coding-workflow). `writing-claude-md`
+has no dependencies.
+
+**Gating:** `/case` and `/refine` require a **frontier model**; `/solve` runs on any tier. Each
+checks its own model ID and stops with a message telling you to switch, so a wrong tier costs you a
+line of output, never a bad story.
+
+### Updating
+
+```
+/plugin update case-solvers                 # Claude Code
+codex plugin marketplace upgrade            # Codex — refresh the snapshot, then re-add
+```
+
+Both hosts key updates off the plugin's `version`, and install each version into its own directory —
+so restart the session after updating to pick the new one up.
 
 ---
 

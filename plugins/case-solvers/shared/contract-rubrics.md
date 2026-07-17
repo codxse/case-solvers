@@ -1,14 +1,20 @@
 # Contract Rubrics — shared by `/case` and `/refine`
 
-The quality bars for authoring or revising a story contract on a **planning model**. `/case`
-(new story/epic) and `/refine` (revise an existing story) both load this **after** their Model
-Guard passes and **before** writing anything to bd. The flow lives in each skill; the bars below
-are identical for both, so they live once, here.
+The quality bars for authoring or revising a story contract on a **planning model**. The flow lives
+in each skill; the bars below are identical for both, so they are written once, here.
 
-> Read this file in full before drafting or revising a contract. Path: `shared/contract-rubrics.md`
-> at this plugin's root (sibling of `skills/`); from a skill folder it is `../../shared/contract-rubrics.md`.
+**This file is the single source of truth, but it is not read at runtime.** Everything below
+`BEGIN SHARED` is inlined verbatim into the `Contract Rubrics` section of `skills/case/SKILL.md` and
+`skills/refine/SKILL.md` by `tests/rubrics-sync.sh`. Edit the rubrics **here**, then run
+`tests/rubrics-sync.sh --write`; never hand-edit the generated block in a skill. Running the script
+with no flag verifies both copies match and fails on drift.
 
----
+Inlining is deliberate. The rubrics are a hard gate — every `/case` and `/refine` invocation needs
+them, so a separate runtime read saves nothing and costs a path that cannot be resolved reliably: a
+relative path in skill prose resolves against the *user's* working directory, not the plugin, and
+`${CLAUDE_PLUGIN_ROOT}` is substituted by Claude Code but not by Codex. Inlined text needs neither.
+
+<!-- BEGIN SHARED -->
 
 ## Authoring principles
 
@@ -130,11 +136,11 @@ anyway). Blank lines between paragraphs stay. Only the fenced `gherkin` block ke
 # [Problem Title]
 
 ## Problem Statement
+```
 As a [actor],
-
 I want [what — the outcome],
-
 so that [why — the benefit].
+```
 
 [Then one paragraph: the problem, why it must be solved, the desired outcome. State the outcome, don't narrate mechanism. The actor by type — Feature/Design: who gets the capability; Bugfix: who the observed failure blocks; Refactor: who maintains the code; Investigation: who the findings inform.]
 

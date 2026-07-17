@@ -66,14 +66,21 @@ publish the same two plugins under `plugins/`:
   bump it in **all four** manifests (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and
   both marketplaces) so the two hosts stay in lockstep.
 - `/case` and `/refine` share the contract rubrics in `plugins/case-solvers/shared/contract-rubrics.md`
-  (Problem Types, Budget-Solver Fit, AC Quality Rubric, Pre-write Guard, Output Format). Edit them
-  there once — don't copy rubric prose back into a skill. Each skill's **Model Guard** stays inline,
-  though: it's the always-loaded security gate and must run before anything is read.
-  - The skills reach the rubrics by relative path (`../../shared/contract-rubrics.md`), which only
-    resolves when the **whole plugin directory** is present. Both hosts' plugin installs copy the full
-    dir, so this holds — but it means these skills must be distributed **as a plugin**, never as loose
-    `skills/<name>/` folders dropped into `~/.agents/skills` (Codex) or anywhere the `shared/` sibling
-    is left behind. Don't recommend a skills-only copy for case/refine.
+  (Problem Types, Budget-Solver Fit, AC Quality Rubric, Pre-write Guard, Output Format). That file is
+  the single source, but it is **not read at runtime**: everything below its `BEGIN SHARED` marker is
+  inlined verbatim into the `Contract Rubrics` section at the end of both SKILL.md files. Edit the
+  rubrics **there**, then run `plugins/case-solvers/tests/rubrics-sync.sh --write`; never hand-edit a
+  skill's generated block. The script with no flag verifies both copies and fails on drift — pure text
+  comparison, so unlike the other tests it's fast, deterministic, and needs no model. That's why it's
+  the one test wired into CI (`.github/workflows/checks.yml`, on push + PR): both hosts install this
+  plugin by copying the repo, with no build step between a commit and a user, so drift on `master` is
+  drift that ships. CI is the only gate there is.
+  - **Why inlined, not read.** The rubrics are a hard gate — every `/case` and `/refine` invocation
+    needs them — so a runtime read saves no context and costs a path that can't resolve reliably: a
+    relative path in skill prose resolves against the *user's* CWD, not the plugin dir, and
+    `${CLAUDE_PLUGIN_ROOT}` is substituted inline in skill content by Claude Code but **not** by Codex,
+    so it would fork the prose per host. Inlined text needs neither, which is why the skills carry no
+    path-resolution instructions at all. Don't reintroduce a runtime read.
 - `AGENTS.md` is a symlink to this file — edit `CLAUDE.md`.
 
 > If the code contradicts anything above, the code wins — update this file in the same change.
