@@ -1,0 +1,22 @@
+name: Checks
+
+# Both hosts install this plugin by copying the repo — there is no build step between
+# a commit and a user's machine, so whatever lands on master is what ships. This is
+# the only gate; it has to hold here or nowhere.
+#
+# Only deterministic checks belong here. The other tests under plugins/case-solvers/tests/
+# (model-guard.sh, authoring-format.sh) call a real model: slow, probabilistic, and
+# credentialed. Those stay manual — run them when changing what they cover.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  rubrics-sync:
+    name: Contract Rubrics match their source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: plugins/case-solvers/tests/rubrics-sync.sh

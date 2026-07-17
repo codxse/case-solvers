@@ -9,6 +9,54 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.17.0] - 2026-07-17
+
+Plugin & marketplace entry `case-solvers` `2.16.0` → `2.17.0`. `/case` (2.7.1 → 2.8.0), `/refine`
+(1.6.1 → 1.7.0).
+
+**Fixed: the shared rubrics are now inlined, not read at runtime.** `/case` and `/refine` pointed at
+`shared/contract-rubrics.md` by relative path (`../../shared/...`). That path can never resolve: the
+Read tool resolves a relative path against the **user's working directory**, not the SKILL.md's own
+directory, so in any real project it became `<parent-of-project>/shared/contract-rubrics.md` and
+errored with `File does not exist`. The skills' own fallback ladder then sent the model to a Bash
+`find` across the plugin cache — which is what produced a permission prompt on every `/case`, and, on
+a bad run, authoring from memory of the rubrics instead of the file.
+
+Everything below the `BEGIN SHARED` marker in `shared/contract-rubrics.md` is now inlined verbatim
+into a `Contract Rubrics` section at the end of both SKILL.md files. All path-resolution prose and the
+`find` fallback are gone; there is no file to locate, so nothing can mis-resolve and nothing prompts.
+
+The rubrics are a hard gate — every invocation loads them — so a separate file never saved context;
+it only bought a fragile path. `${CLAUDE_PLUGIN_ROOT}`, which Claude Code substitutes inline in skill
+content, would have fixed this on Claude Code alone, but Codex does not substitute it and the repo's
+rule is one skill body per host. Inlined text needs no host contract at all.
+
+**New: `tests/rubrics-sync.sh`** keeps the two inlined copies byte-identical to the source. No flag
+verifies and exits non-zero on drift; `--write` regenerates. It never calls a model — a pure text
+comparison, fast and deterministic.
+
+**New: CI (`.github/workflows/checks.yml`)**, the repo's first. It runs `rubrics-sync.sh` on push to
+`master` and on every PR. Inlining moved the failure mode from loud to silent: the old bug prompted on
+every `/case`, whereas stale inlined rubrics would look completely normal while the skills authored
+against out-of-date bars. Both hosts install this plugin by copying the repo — there is no build step
+between a commit and a user's machine — so drift on `master` is drift that ships, and CI is the only
+place a gate can stand. The model-calling tests (`model-guard.sh`, `authoring-format.sh`) stay manual:
+slow, probabilistic, credentialed.
+
+**Changed: the story line in the Output Format template is now a fenced code block.** `As a / I want /
+so that` previously relied on blank lines between the three lines to keep them apart; they now sit in
+a fence, the same device the `gherkin` block already uses, for the same reason — bare lines collapse
+into one paragraph when rendered.
+
+**Removed: `tests/rubric-read.sh`.** It existed solely to assert the model achieved a non-error Read
+of `contract-rubrics.md` — a slow, probabilistic test of the very mechanism this release deletes.
+
+**Docs.** `README.md` install section now covers both hosts properly: verified Codex syntax
+(`codex plugin list`, `codex plugin marketplace upgrade` — not `update`), how to check the install on
+each host, updating, and which commands are slash-only on Codex. Dropped the "install the plugin, not
+loose skill folders" warning — with the rubrics inlined, a `skills/<name>/` copy no longer breaks
+`/case` and `/refine`.
+
 ## [2.16.0] - 2026-07-17
 
 Plugin & marketplace entry `case-solvers` `2.15.2` → `2.16.0`.
