@@ -1,0 +1,25 @@
+{
+  "description": "Prime the session with case-solvers command awareness (/case /refine /solve /evaluate /board) on start and before compaction",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"${CLAUDE_PLUGIN_ROOT}/hooks/session-primer.md\""
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"${CLAUDE_PLUGIN_ROOT}/hooks/session-primer.md\""
+          }
+        ]
+      }
+    ]
+  }
+}

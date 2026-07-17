@@ -9,6 +9,16 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.16.0] - 2026-07-17
+
+Plugin & marketplace entry `case-solvers` `2.15.2` → `2.16.0`.
+
+**New: session-start / pre-compact primer hook.** `plugins/case-solvers/hooks/hooks.json` now ships
+with the plugin (Claude Code only — hooks aren't part of the shared `skills/` tree) and fires on
+`SessionStart` and `PreCompact`, printing `hooks/session-primer.md`: a one-screen cheat sheet of
+when to reach for `/case`, `/refine`, `/solve`, `/evaluate`, and `/board`. Keeps the workflow
+top-of-mind across long sessions and survives context compaction, without querying live `bd` state.
+
 ## [2.15.2] - 2026-07-17
 
 Plugin & marketplace entry `case-solvers` `2.15.1` → `2.15.2`. (`/case` `2.7.0` → `2.7.1`, `/refine`
