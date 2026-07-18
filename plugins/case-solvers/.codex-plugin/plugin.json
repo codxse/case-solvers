@@ -1,7 +1,7 @@
 {
   "name": "case-solvers",
-  "version": "2.18.0+codex.20260718094559",
-  "description": "A bd-backed, parallel-capable coding workflow: /case (frontier model) authors stories/epics in Beads and /refine revises them, /board renders the backlog, /solve (any model tier) implements one in an isolated git worktree, /evaluate merges it after human review. Dependency-aware; bd stays hidden behind the commands. Requires the bd (Beads) CLI.",
+  "version": "2.19.0+codex.20260718110734",
+  "description": "A bd-backed, parallel-capable coding workflow: /case (frontier model) authors stories/epics in Beads and /refine revises them, /board renders the backlog, /solve (any model tier) implements one in an isolated git worktree, /evaluate merges it after human review, /orchestrate (frontier model) automates the solve-review-land loop for a whole epic behind one final PR. Dependency-aware; bd stays hidden behind the commands. Requires the bd (Beads) CLI.",
   "author": {
     "name": "nadiar",
     "email": "codex@nadiar.id"
@@ -27,14 +27,15 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Case Solvers",
-    "shortDescription": "A bd-backed, parallel-capable coding workflow: author, refine, solve, and evaluate stories.",
-    "longDescription": "Manage a Beads-backed engineering workflow from story authoring through isolated implementation and human-reviewed merge.",
+    "shortDescription": "A bd-backed, parallel-capable coding workflow: author, refine, solve, evaluate, and orchestrate stories.",
+    "longDescription": "Manage a Beads-backed engineering workflow from story authoring through isolated implementation, human-reviewed merge, and whole-epic orchestration behind a single final PR.",
     "defaultPrompt": "Show the Case Solvers board and help me choose the next appropriate workflow action.",
     "capabilities": [
       "Story authoring",
       "Backlog viewing",
       "Isolated implementation",
-      "Human review and merge"
+      "Human review and merge",
+      "Epic orchestration"
     ],
     "developerName": "nadiar",
     "category": "Productivity"

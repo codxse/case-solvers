@@ -4,7 +4,7 @@ Two agent plugins for **Claude Code** and **OpenAI Codex** — same skills, eith
 
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
-| `case-solvers` | `/case`, `/refine`, `/board`, `/solve`, `/evaluate` | bd-backed, parallel coding workflow: author stories/epics → solve in worktrees → review & merge |
+| `case-solvers` | `/case`, `/refine`, `/board`, `/solve`, `/evaluate`, `/orchestrate` | bd-backed, parallel coding workflow: author stories/epics → solve in worktrees → review & merge, or automate a whole epic behind one PR |
 | `writing-claude-md` | `/writing-claude-md` | Write lean, high-signal CLAUDE.md / AGENTS.md context files |
 
 ## Why I built this
@@ -97,17 +97,18 @@ codex plugin add writing-claude-md@case-solvers
 These run in your shell, not in a Codex session, and need a Codex CLI new enough to have the plugin
 subcommand — check with `codex plugin --help`. Verify the install with `codex plugin list`.
 
-On Codex, `/solve` and `/evaluate` are **slash-only** — they bake work into a branch, so they never
-auto-fire mid-conversation. `/case`, `/refine`, and `/board` also answer plain English ("put this to
-a case", "show the board").
+On Codex, `/solve`, `/evaluate`, and `/orchestrate` are **slash-only** — they bake work into a
+branch, so they never auto-fire mid-conversation. `/case`, `/refine`, and `/board` also answer plain
+English ("put this to a case", "show the board").
 
 **Requirements:** the `bd` CLI on your `PATH` for `case-solvers` — see
-[the command reference below](#case-solvers--bd-backed-parallel-coding-workflow). `writing-claude-md`
-has no dependencies.
+[the command reference below](#case-solvers--bd-backed-parallel-coding-workflow). `/orchestrate`
+additionally needs the `gh` CLI, authenticated, for opening its final PR. `writing-claude-md` has no
+dependencies.
 
-**Gating:** `/case` and `/refine` require a **frontier model**; `/solve` runs on any tier. Each
-checks its own model ID and stops with a message telling you to switch, so a wrong tier costs you a
-line of output, never a bad story.
+**Gating:** `/case`, `/refine`, and `/orchestrate` require a **frontier model**; `/solve` runs on any
+tier. Each checks its own model ID and stops with a message telling you to switch, so a wrong tier
+costs you a line of output, never a bad story.
 
 ### Updating
 
@@ -167,6 +168,10 @@ On a **frontier model** (Opus / Sonnet / Fable / Gemini Pro / GPT-5-class) — a
   likely to succeed — so you know which model to run `/solve` on.
 - **`/refine <id>`** → revises an existing story's contract from a `/solve` spec-gap, an `/evaluate`
   change-request, or your own ask — stays WHAT-only, returns it to ready.
+- **`/orchestrate <epic-id>`** → automates the `/solve` → review → land loop across a whole epic's
+  stories in parallel, landing each on an integration branch instead of one at a time by hand, and
+  stops at a single pull request for you to review and merge — the one human gate for the epic. It
+  runs unsupervised for most of the epic, which is why it needs the same tier as `/case`/`/refine`.
 
 On a **budget model** (Haiku / Gemini Flash / MiniMax-M3) — do the *how*:
 
@@ -198,6 +203,11 @@ Then, on a budget model, `/solve <id>` each story — run several in parallel, e
 worktree+branch. `/evaluate <id>` reviews and merges, unblocking dependents. If a story comes back
 `needs-refinement`, `/refine <id>` rewrites the *contract* (not the code) and returns it to ready.
 `bd` enforces dependencies throughout, so a blocked story is always refused with a reason.
+
+For an epic, `/orchestrate <epic-id>` automates that whole solve-review-land cycle instead of you
+running it story by story — it works on an integration branch, reviews every story itself at the
+effort its Complexity call recommends, and only asks for you once, at the end, on the one PR that
+merges the epic.
 
 ### Runtime artifacts
 

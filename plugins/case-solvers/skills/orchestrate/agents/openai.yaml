@@ -1,0 +1,8 @@
+# Codex invocation policy for /orchestrate — mirrors `disable-model-invocation: true`
+# in SKILL.md (Claude Code). Side-effecting (drives /solve + /evaluate across an
+# epic, culminating in a PR): explicit only, never auto-fired mid-conversation.
+interface:
+  display_name: "Orchestrate"
+  short_description: "Drive one epic's /solve → review → land loop to a single PR"
+policy:
+  allow_implicit_invocation: false
