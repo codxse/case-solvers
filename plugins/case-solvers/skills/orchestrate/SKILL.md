@@ -1,7 +1,7 @@
 ---
 name: orchestrate
 description: "Automate the story-by-story /solve → review → land loop for one bd epic, with a single human gate at the end. Requires a planning model, the same gate /case and /refine carry — it makes unsupervised judgment calls throughout the run and never pauses for a live human response until the final PR. Creates/checks out epic/<id>, dispatches /solve --unattended one story at a time by default (--parallel opts into dispatching a whole ready wave concurrently), runs an unattended frontier review via /evaluate --review --unattended, lands each story through /evaluate --approve --unattended serialized on bd merge-slot, then opens one PR epic/<id> → <base> with one epic-level version bump + changelog entry. The one exception: if the shared epic branch's integrity can't be verified mid-run, it halts the whole run with an incident report rather than continuing. Nothing is final until that PR merges."
-version: 1.3.0
+version: 1.4.0
 argument-hint: '<epic-id> [--dry-run] [--parallel]'
 disable-model-invocation: false
 user-invocable: true
@@ -170,14 +170,18 @@ Repeat until termination (step 6):
      stories are known to touch disjoint files/modules — the conflict cascade above is exactly the
      failure mode this flag re-admits. Dispatch one subagent per ready story; each works inside its
      own isolated worktree forked from `epic/<epic-id>`'s state at dispatch time, so any number of
-     these run concurrently without touching each other or the shared main worktree. Landing (step
-     5.3) still happens one at a time either way — `--parallel` only affects how many `/solve`s run
-     at once, never how many land at once.
-   - Whichever mode: each subagent runs `/solve <id> --unattended` and then, once it reaches
-     `needs-review`, the mandatory review below. `--unattended` means the dispatched solver — often a
-     budget-tier model, per its `solver-<tier>` label — never tries to resolve an ambiguity or a
-     blocker itself; it stalls and hands back, exactly like a spec-gap (step 6 absorbs it the same
-     way). Only the orchestrator (this skill, always planning-tier) makes judgment calls during a run.
+     these run concurrently without touching each other or the shared main worktree. Review and
+     landing (step 5.3) still happen one at a time either way — `--parallel` only affects how many
+     `/solve`s run at once, never how many review or land at once.
+   - Whichever mode: each subagent runs `/solve <id> --unattended` and **nothing else** — its job
+     ends when the story reaches `needs-review` (or stalls). It never runs the review itself: the
+     mandatory review happens in this skill's own control flow (step 5.3), which keeps every spawn in
+     the run at **depth one** — Codex's `agents.max_depth` defaults to 1, so a reviewer spawned from
+     inside a dispatched subagent would simply fail there, and Claude Code restricts nested named
+     spawns similarly. `--unattended` means the dispatched solver — often a budget-tier model, per its
+     `solver-<tier>` label — never tries to resolve an ambiguity or a blocker itself; it stalls and
+     hands back, exactly like a spec-gap (step 6 absorbs it the same way). Only the orchestrator
+     (this skill, always planning-tier) makes judgment calls during a run.
    - Read the story's `solver-<tier>` label (`bd show <id>`) and pin that subagent's model to it —
      the first place the Complexity Tier recommendation is actually acted on, not just displayed
      for a human to read. No label → dispatch unpinned.
@@ -186,18 +190,20 @@ Repeat until termination (step 6):
      untouched, even if the story's scope seems to call for editing one — that's step 7's job, once,
      for the whole epic. An AC genuinely unmeetable without touching one → stop and let step 6
      report it, don't edit it anyway.
-   - **Mandatory review, no orchestrator judgment.** Once the story reaches `needs-review`: read its
-     **effort** from `bd show <id>`'s `## Complexity` line (`Recommended Solver: <tier> · effort
-     <low|medium|high|max>`); no such section (a pre-rubric story) → fall back to `high`,
-     `/evaluate --review`'s own default. Run `/evaluate <id> --review <effort> --unattended`. This
-     runs on every story that reaches review, always — never skipped, never a guess about whether
-     it's warranted. Its cost keys off the same Complexity call twice, with no orchestrator judgment
-     in either dimension: the effort above picks the review's depth, and `/evaluate`'s `--unattended`
-     pin keys the reviewer's **model** off the story's `solver-<tier>` label (its own step 4b.1 rule)
-     — budget/medium stories get the cheapest frontier reviewer, only `solver-frontier` stories pay
-     for the strongest — so a ten-story epic doesn't pay the strongest reviewer ten times.
-3. **Land, one at a time, only in this skill's own control flow — never inside a per-story
-   subagent.** For each story a subagent hands back reviewed-and-ready:
+3. **Review, then land — one story at a time, only in this skill's own control flow — never inside
+   a per-story subagent.** For each story a subagent hands back at `needs-review`:
+   - **Mandatory review, no orchestrator judgment.** Read its **effort** from `bd show <id>`'s
+     `## Complexity` line (`Recommended Solver: <tier> · effort <low|medium|high|max>`); no such
+     section (a pre-rubric story) → fall back to `high`, `/evaluate --review`'s own default. Run
+     `/evaluate <id> --review <effort> --unattended`. This runs on every story that reaches review,
+     always — never skipped, never a guess about whether it's warranted. Its cost keys off the same
+     Complexity call twice, with no orchestrator judgment in either dimension: the effort above picks
+     the review's depth, and `/evaluate`'s `--unattended` pin keys the reviewer's **model** off the
+     story's `solver-<tier>` label (its own step 4b.1 rule) — budget/medium stories get the cheapest
+     frontier reviewer, only `solver-frontier` stories pay for the strongest — so a ten-story epic
+     doesn't pay the strongest reviewer ten times. Under `--parallel`, reviews queue here one at a
+     time like landings do — acceptable: the review+land pair per story is what keeps the shared
+     base stable.
    - `bd merge-slot check` → not found → `bd merge-slot create` once.
    - `bd merge-slot acquire --holder orchestrate-<epic-id> --wait`.
    - `/evaluate <id> --approve --unattended` — lands `bd/<id>` onto `epic/<epic-id>`; its conflict
@@ -274,7 +280,7 @@ the literal-completion version of this check would hang on one. Then:
 | record/read run scope + base | `bd comment <epic-id> "..."` / `bd show <epic-id>` |
 | live readiness | `bd swarm status <epic-id> --json` |
 | epic branch (never hardcode trunk) | `git branch --show-current` (`<origin>`); `git checkout -b epic/<epic-id> <origin>` or `git checkout epic/<epic-id>` if resuming |
-| dispatch a story | one at a time by default (next cycle after prior lands); `--parallel` dispatches the whole ready front at once. Subagent pinned per `solver-<tier>`, runs `/solve <id> --unattended`, then the mandatory review, on `needs-review` |
+| dispatch a story | one at a time by default (next cycle after prior lands); `--parallel` dispatches the whole ready front at once. Subagent pinned per `solver-<tier>`, runs `/solve <id> --unattended` **only** — the mandatory review runs in this skill's own flow (step 5.3), never nested inside the subagent |
 | mark orchestrated | `bd label add <id> orchestrated` |
 | story effort for review | `bd show <id>` → `## Complexity` line; fall back `high` if absent |
 | unattended review-and-apply | `/evaluate <id> --review <effort> --unattended` |

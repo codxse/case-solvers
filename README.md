@@ -107,6 +107,19 @@ its qualified name, such as `$case-solvers:orchestrate <epic-id>`.
 additionally needs the `gh` CLI, authenticated, for opening its final PR. `writing-claude-md` has no
 dependencies.
 
+**Reviewer agents (recommended):** the plugin ships two review-and-apply agent definitions —
+`case-reviewer` (cheapest frontier tier) and `case-reviewer-strong` (strongest) — that `/evaluate`
+prefers when spawning its review pass, so the reviewer's model pin is enforced by the agent
+definition instead of prose. On **Claude Code** they load automatically with the plugin. On
+**Codex**, plugins don't auto-load agents yet — copy the TOML templates into your project once:
+
+```sh
+cp ~/.codex/plugins/cache/case-solvers/case-solvers/<version>/agents/*.toml .codex/agents/
+```
+
+Without them, `/evaluate` falls back to pinning the model explicitly on a general subagent — same
+behavior, just enforced by prose rather than the harness.
+
 **Gating:** `/case`, `/refine`, and `/orchestrate` require a **frontier model**; `/solve` runs on any
 tier. Each checks its own model ID and stops with a message telling you to switch, so a wrong tier
 costs you a line of output, never a bad story.

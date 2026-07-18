@@ -9,6 +9,38 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.23.0] - 2026-07-18
+
+Plugin & marketplace entry `case-solvers` `2.22.0` → `2.23.0`. `/orchestrate` (`1.3.0` → `1.4.0`),
+`/evaluate` (`1.12.0` → `1.13.0`). New plugin component: `agents/`.
+
+**Changed: `/orchestrate`'s mandatory review pass moved out of the per-story subagent into the
+orchestrator's own control flow (step 5.3, alongside landing).** The dispatched subagent now runs
+`/solve <id> --unattended` and nothing else — its job ends at `needs-review` or a stall. Previously
+the subagent also ran `/evaluate --review --unattended`, whose reviewer spawn made the run's spawn
+graph two levels deep — which fails outright on Codex (`agents.max_depth` defaults to `1`) and
+already tripped Claude Code's flat-roster rule in a real run (a dispatched teammate tried to spawn
+the reviewer as a named teammate and had to retry anonymously). Every spawn in a run is now depth
+one on both hosts. Under `--parallel`, reviews queue in the orchestrator one at a time exactly like
+landings already did — in the default serial mode nothing is lost at all.
+
+**Added: shipped reviewer agent definitions, dual-format — the model pin moves from prose to the
+harness.** `plugins/case-solvers/agents/` now carries `case-reviewer` (cheapest-frontier pin;
+Claude: Sonnet / Codex: base GPT-5-class) and `case-reviewer-strong` (strongest; Claude: Opus /
+Codex: its strongest GPT-5-class), each twice: `<name>.md` (Claude Code agent format, auto-loaded
+via the plugin manifest's new `agents` key) and `<name>.toml` (Codex agent format — Codex plugins
+don't auto-load agents yet, so the TOMLs are copy-installed into `.codex/agents/`, documented in the
+README). Both formats carry the same instructions verbatim, mirroring the repo's two-manifests-one-
+content pattern. `/evaluate` step 4b.1 now prefers these agents when the host lists them — the
+frontier pin is then enforced by the agent definition rather than by prose exhortation ("pinning is
+mandatory") aimed at whatever model happens to be running — and its `--unattended` tier-keyed rule
+(v2.22.0) now selects *which agent* to spawn (`case-reviewer` for budget/medium, `-strong` for
+frontier and same-class step-ups) instead of naming raw model ids. The prose pin survives as an
+explicit fallback for installs without the agents, so nothing breaks on an older or partial setup.
+Reviewer spawns are also now explicitly **anonymous** (never pass `name`): named teammates can't be
+spawned from inside another agent — the flat-roster error observed in practice — and nothing needs
+to address a one-shot reviewer after it reports.
+
 ## [2.22.0] - 2026-07-18
 
 Plugin & marketplace entry `case-solvers` `2.21.0` → `2.22.0`. `/evaluate` (`1.11.0` → `1.12.0`),
