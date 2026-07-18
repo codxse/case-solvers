@@ -1,7 +1,7 @@
 ---
 name: solve
 description: 'Implement one bd story by id in an isolated git worktree+branch (created inside the repo at .worktree/<id>), ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks.'
-version: 1.4.1
+version: 1.5.0
 argument-hint: '[<story-id>]'
 disable-model-invocation: false
 user-invocable: true
@@ -18,11 +18,9 @@ Run as a budget-conscious solver. Read one story's contract from **bd** (the **W
 `/solve` is designed for a **budget model** but runs on any. Read your model ID from your system prompt and derive two things:
 
 - **Your solver name** — the model's short class name (`haiku`, `sonnet`, `opus`, `fable`, `gpt-5.6-sol`, …), used as the bd assignee at claim time (step 3) so the story records which model picked it up.
-- **Your tier.** On a frontier-tier model (Opus/Sonnet/Fable/Mythos/GPT-5/Gemini Pro-class), warn once, then continue:
+- **Your tier.** Frontier-tier (Opus/Sonnet/Fable/Mythos/GPT-5/Gemini Pro-class) puts the **Senior Solver rules** (below) in effect for the whole run, regardless of what the story turns out to need. Any other model → budget tier, no special rules.
 
-> You're running `/solve` on `<model>` (expensive). Cheaper: `/clear`, then switch to a budget model via `/model`. Continuing now is fine too.
-
-Any other model → proceed, no warning. This warns; it never blocks — but continuing on a frontier tier puts the **Senior Solver rules** (below) in effect for the whole run.
+Whether a frontier tier is *worth flagging as expensive for this story* depends on the story itself — checked once it's resolved (step 1), not here.
 
 ## Environment Guard — Run Second
 
@@ -60,6 +58,11 @@ Only two things are real: **the bd story** and **the actual codebase**. If a fac
 ### 1. Resolve the story
 - No id given → don't guess; show the READY list (`bd ready`) and ask which, or point to `/board` for the board. Stop.
 - `bd show <id>` → read the contract and its comments.
+- **Frontier cost check** (only if your tier from Model Check is frontier): read the story's `solver-*` label. `solver-frontier` → the story itself calls for this tier; say nothing. Any other label, or none → warn once:
+
+  > You're running `/solve` on `<model>` (expensive) for a story that doesn't call for it. Cheaper: `/clear`, then switch to a budget model via `/model`. Continuing now is fine too.
+
+  This warns; it never blocks.
 
 ### 2. Dependency Guardrail — refuse if blocked
 Check the story's blockers (`bd ready` includes it only if unblocked; else inspect via `bd show`/`bd blocked`).

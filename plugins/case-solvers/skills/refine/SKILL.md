@@ -1,7 +1,7 @@
 ---
 name: refine
 description: 'Revise an existing bd story contract on a planning model — typically one labelled needs-refinement after a /solve spec-gap or /evaluate change-request. Applies the feedback, stays WHAT-only, returns it to ready for /solve. Use when the user asks to refine/revise/update a story by id.'
-version: 1.7.1
+version: 1.8.0
 argument-hint: '<story-id>'
 user-invocable: true
 ---
@@ -73,9 +73,9 @@ emit the model-guard line and the stop message above, and write nothing.
 ## 2. The bars
 
 A revision is held to the same bars as a fresh story: **Contract Rubrics** at the end of this skill.
-Authoring principles, AC Quality Rubric, Budget-Solver Fit, Pre-write Guard, and Output Format all
-apply to the revision exactly as they do to a fresh story. They are part of this skill and already in
-context: there is no rubric file to locate, open, or read.
+Authoring principles, AC Quality Rubric, Budget-Solver Fit, Complexity Tier, Pre-write Guard, and
+Output Format all apply to the revision exactly as they do to a fresh story. They are part of this
+skill and already in context: there is no rubric file to locate, open, or read.
 
 ## 3. Vet the reason before trusting it
 
@@ -89,8 +89,10 @@ fix — say so and shape it that way.
 
 Revise or add AC, Constraints, or Context; or split into more stories. **Stay WHAT-only** (Authoring
 principles — never mechanism or code). Re-run the AC Quality Rubric and Budget-Solver Fit on the
-change — the solver already proved the last sizing optimistic, so judge **stricter**. Run the Pre-write
-Guard over anything you add.
+change — the solver already proved the last sizing optimistic, so judge **stricter**. Re-judge
+Complexity Tier too, not just size — a story reaching `/refine` after a spec-gap often proved harder
+than first judged, so don't assume the original tier call still holds. Run the Pre-write Guard over
+anything you add.
 
 ## 5. Confirm, then write
 
@@ -98,6 +100,8 @@ Show the **intent** of the change (what's added/cut/split and why) — not the w
 confirm:
 - `bd update <id> …` with the revised body, **remove the `needs-refinement` label**, and set status
   back to `open` (it shows as ready once unblocked).
+- If the Complexity call changed, swap the solver-tier label: `bd label remove <id> solver-<old>` +
+  `bd label add <id> solver-<new>`.
 - If you split it, create the new stories (`bd create "<title>" -t story`) with the right dependency
   edges (`bd dep add <blocker> --blocks <dependent>`).
 
@@ -116,6 +120,7 @@ you created. `/board <id>` to view it.
 | stories awaiting refinement | `bd list` (filter `needs-refinement`) |
 | update body / set ready | `bd update <id> …` |
 | remove the refinement flag | `bd label remove <id> needs-refinement` |
+| swap solver-tier label | `bd label remove <id> solver-<old>` + `bd label add <id> solver-<new>` |
 | split out a new story | `bd create "<title>" -t story` |
 | ordering edge (B needs A) | `bd dep add A --blocks B` |
 
@@ -179,6 +184,44 @@ which model runs `/solve`.
 
 ---
 
+## Complexity Tier
+
+Budget-Solver Fit gates *scope and ambiguity* — every story reaching bd already fits a budget
+solver's working set. Complexity is a separate axis, judged only after that gate passes: a
+well-scoped, settled story can still call for more reasoning capability than raw execution. Judge it
+in addition to Budget-Solver Fit, never instead of it.
+
+Recommend the **cheapest tier + effort combination likely to succeed.**
+
+**Tiers** (ordinal — no model-ID pinning; the roster changes, the judgment shouldn't):
+- **budget** — mechanical: follows an existing pattern, low blast radius if subtly wrong.
+- **medium** — the cheaper end of the planning roster (e.g. Sonnet over Opus) or the strongest end of
+  the budget roster — whichever middle option the setup actually offers. One real difficulty signal
+  below, contained to a single well-understood area.
+- **frontier** — high blast radius if subtly wrong (security, auth, money, data loss), or the correct
+  approach itself takes judgment (novel algorithm, non-obvious concurrency/ordering, reconciling
+  constraints that look like they conflict).
+
+**Difficulty signals** (presence pushes up a tier; none present → budget): security/auth/crypto
+surface; concurrency, ordering, or race-condition correctness; non-obvious algorithmic or
+mathematical reasoning; subtle external library/API semantics (easy to call in a way that looks
+correct but isn't); a refactor across an unfamiliar or inconsistent existing pattern, where
+preserving behavior takes judgment, not mechanical translation.
+
+**Escalate along the axis the signal actually stresses** — don't default to raising tier for
+everything:
+- A signal about **volume** (long AC list, wide file surface, repetitive-but-mechanical work) →
+  raise **effort** within the current tier.
+- A signal about **subtlety or blast radius** (the signals above) → raise **tier**; more effort on a
+  weaker model doesn't close a capability gap.
+
+**Effort** (`low`/`medium`/`high`/`max` — this workflow's own scale) grades independently of tier.
+
+State the call as `Recommended Solver: <tier> · <effort>` plus one line naming the driving signal(s),
+or "no difficulty signal — mechanical" for budget.
+
+---
+
 ## Verification Mode
 
 Every story states a `Verification` mode telling downstream whether a human checkpoint is needed:
@@ -233,9 +276,10 @@ Before a story enters bd, scan and strip:
 - AC step written as "I" or narrating UI mechanics → rewrite declarative, third person, actor named.
 - Prose paragraph hard-wrapped across lines → join to one line (see Output Format; `gherkin` block exempt).
 
-Then self-audit: all core sections filled; a Verification mode stated; every named artifact verified
-to exist; solver dry-run each AC (could a budget solver write the test from Given/When/Then +
-Context + Glossary without making an open design decision?). A lurking decision → settle it or split.
+Then self-audit: all core sections filled; a Verification mode stated; a Complexity call made and
+stated; every named artifact verified to exist; solver dry-run each AC (could a budget solver write
+the test from Given/When/Then + Context + Glossary without making an open design decision?). A
+lurking decision → settle it or split.
 
 ---
 
@@ -292,6 +336,10 @@ Feature: [behavior under test — titled by problem type]
 
 ## Verification
 Verification: [auto | human | auto+human]   — [human/auto+human: what a person checks + how to exercise it]
+
+## Complexity
+Recommended Solver: [budget | medium | frontier] · effort [low | medium | high | max]
+[One line: which difficulty signal(s) drove the tier, or "no difficulty signal — mechanical".]
 
 ## Out of Scope
 - [Explicit things not done here]

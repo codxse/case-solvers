@@ -1,7 +1,7 @@
 ---
 name: board
 description: 'Show the bd backlog as a status board, or one story by its id. Read-only and runs on any model tier. Use when the user asks to see/list/view their stories or cases, "show the board", or "show story <id>".'
-version: 1.0.0
+version: 1.1.0
 argument-hint: '[<story-id>]'
 user-invocable: true
 ---
@@ -26,14 +26,14 @@ Render the user's work as a status board. Pull data with `bd list --json`, `bd r
 `bd blocked` and render as a Markdown table:
 
 ```
-| # | Title | Status | Notes |
-|---|---|---|---|
-| 12 | <title> | READY | |
-| 19 | <title> | READY | |
-| 8 | <title> | IN PROGRESS | |
-| 5 | <title> | ✅ DONE | bd/5 |
-| 9 | <title> | ✅ DONE | bd/9 |
-| 14 | <title> | BLOCKED | waits #5 |
+| # | Title | Status | Solver | Notes |
+|---|---|---|---|---|
+| 12 | <title> | READY | budget | |
+| 19 | <title> | READY | frontier | |
+| 8 | <title> | IN PROGRESS | medium | |
+| 5 | <title> | ✅ DONE | budget | bd/5 |
+| 9 | <title> | ✅ DONE | | bd/9 |
+| 14 | <title> | BLOCKED | budget | waits #5 |
 
 Epic "<name>": 3/7 done · 2 in-progress · 1 review · 1 blocked
 ```
@@ -41,7 +41,11 @@ Epic "<name>": 3/7 done · 2 in-progress · 1 review · 1 blocked
 - **READY** = `bd ready` (no open blockers). **IN PROGRESS** = claimed/`in_progress`. **✅ DONE** =
   label `needs-review`; Notes shows the branch `bd/<id>`. **BLOCKED** = has open blockers; Notes
   shows `waits #<blocker-id>`.
-- If the board is empty, emit the table header row and a single body row: `| | (no stories yet) | | |`.
+- **Solver** = the story's recommended tier (`budget`/`medium`/`frontier`) read from its `solver-*`
+  label — the cost-effective call `/case` made at authoring time. Blank if unset (a story authored
+  before this existed).
+- If the board is empty, emit the table header row and a single body row:
+  `| | (no stories yet) | | | |`.
 - For each epic, one rollup line below the table: `done/total` plus a breakdown.
 - Close with the next actions: `/solve <id>` to work a READY story, `/evaluate <id>` to review a
   DONE one, `/refine <id>` if a story is back for refinement.

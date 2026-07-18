@@ -1,7 +1,7 @@
 ---
 name: evaluate
 description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (land it on the branch it was forked from — `main`, `master`, or a feature branch — close, unblock dependents) or request changes. Request changes spawns a frontier-pinned subagent (Opus by default, never the ambient model) that runs /code-review and applies the fixes in place, shows you the applied diff, and amends bd/<id> only after you confirm; a wrong contract instead routes to /refine. --approve lands it on its base branch without opening the diff; --review [effort] runs the code-review pass straight away (default high); --note <text> steers the review and/or annotates the story.'
-version: 1.8.0
+version: 1.9.0
 argument-hint: '[<story-id>] [--approve] [--review [effort]] [--note <text>]'
 disable-model-invocation: false
 user-invocable: true
@@ -19,7 +19,7 @@ The human review gate. A story finished by `/solve` sits in **`needs-review`** o
 
 | Flags | Action |
 |---|---|
-| `--approve` | Resolve story (step 1), skip steps 2–3, go straight to 4a (merge) |
+| `--approve` | Resolve story (step 1), skip steps 2–3, go straight to 4a (merge), skip 4a's step 7 calibration ask |
 | `--review [effort]` | Resolve story (step 1), skip steps 2–3, go straight to **4b implementation path** — run the `/code-review` pass at `effort` (default `high`) |
 | `--approve --note <text>` | Same as `--approve`; record `<text>` as a `bd comment` before merging |
 | `--review [effort] --note <text>` | Same as `--review`; pass `<text>` to the reviewer as steering ("focus on …") **and** record it as a `bd comment` |
@@ -54,6 +54,7 @@ Ask plainly: **approve & merge**, or **request changes**? Do not push an opinion
    - **Ambiguous** — both sides changed the same logic/value differently, or resolving means one story's AC must lose, or tests go red → **do not guess.** Present it decision-ready: the conflict, the two intents, the options, your recommendation. Let the human decide, then apply. (A semantic conflict often means the decomposition let two stories collide — worth flagging for `/refine`.)
 5. After a clean merge: `bd close <id>` (this unblocks any dependents — recompute and report which stories are now READY), remove the `needs-review` label, and remove the worktree + delete branch `bd/<id>`.
 6. Report: landed on `<base>`, closed, and the newly-unblocked stories (`/solve <id>` to pick one).
+7. **Calibration** (interactive flow only — skip on the `--approve`/`--review` fast paths): if the story carries a `solver-*` label, ask once whether the recommended tier matched how it actually went (e.g. "solved cleanly at budget as recommended" vs "needed more than expected"). Record the answer as a `bd comment` if given; skip silently if the human has no opinion. Never blocks or delays the merge that already happened above — this is a data point for judging the Complexity Tier rubric's accuracy over time, nothing else.
 
 ### 4b. Request changes → fix in place via /code-review
 If `--note <text>` was supplied, record it as a `bd comment` now (before asking anything else).
