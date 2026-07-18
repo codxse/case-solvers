@@ -1,7 +1,7 @@
 ---
 name: refine
 description: 'Revise an existing bd story contract on a planning model — typically one labelled needs-refinement after a /solve spec-gap or /evaluate change-request. Applies the feedback, stays WHAT-only, returns it to ready for /solve. Use when the user asks to refine/revise/update a story by id.'
-version: 1.8.0
+version: 1.8.1
 argument-hint: '<story-id>'
 user-invocable: true
 ---
@@ -34,10 +34,10 @@ cheap/fast tier (Haiku/MiniMax-M3/Gemini Flash-class), the solver (`/solve`).
 2. **Emit one line, verbatim, before anything else:** `model-guard: id=<exact-id> tier=<planning|budget|unsure>`.
 3. **Classify by the ID, not by self-assessed capability:**
    - **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
-     `small`, or `nano`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
-     `gpt-5-mini`/`gpt-5-nano`). A budget marker here outranks any planning marker below.
+     `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
+     `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). A budget marker here outranks any planning marker below.
    - **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
-     Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.5-high`) / equivalent high-tier model.
+     Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) / equivalent high-tier model.
    - **unsure** — anything you cannot positively place in the planning list.
 4. **Proceed only on `tier=planning`.** On `budget` **or** `unsure`, **STOP** — change nothing. Reply
    only:

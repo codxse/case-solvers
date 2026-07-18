@@ -1,7 +1,7 @@
 ---
 name: case
 description: 'Author one bd story, or decompose a large goal into an epic, on a planning model. Authoring only — view the board with /board, revise an existing story with /refine. Use when the user asks to open/file a case, put a problem or goal "to a case", or write a new story or epic — e.g. "let''s put our problem to a case".'
-version: 2.9.0
+version: 2.9.1
 argument-hint: '<description>'
 user-invocable: true
 ---
@@ -37,10 +37,10 @@ anything to bd, run this gate:
 2. **Emit one line, verbatim, before anything else:** `model-guard: id=<exact-id> tier=<planning|budget|unsure>`.
 3. **Classify by the ID, not by self-assessed capability:**
    - **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
-     `small`, or `nano`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
-     `gpt-5-mini`/`gpt-5-nano`). A budget marker here outranks any planning marker below.
+     `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
+     `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). A budget marker here outranks any planning marker below.
    - **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
-     Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.5-high`) / equivalent high-tier model.
+     Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) / equivalent high-tier model.
    - **unsure** — anything you cannot positively place in the planning list.
 4. **Proceed only on `tier=planning`.** On `budget` **or** `unsure`, **STOP** — do not draft,
    decompose, or write to bd. Reply only:

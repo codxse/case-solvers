@@ -10,8 +10,10 @@ OpenAI Codex — their plugin layouts mirror each other, so each plugin carries 
 files, and the repo carries two marketplaces (`.claude-plugin/marketplace.json`,
 `.agents/plugins/marketplace.json`). Never fork the skill prose per host — edit the one SKILL.md.
 The same dual-manifest pattern covers **subagent definitions**: `plugins/case-solvers/agents/` ships
-each reviewer agent twice — `<name>.md` (Claude Code format, loaded with the plugin via the
-manifest's `agents` key) and `<name>.toml` (Codex format; Codex plugins don't auto-load agents, so
+each reviewer agent twice — `<name>.md` (Claude Code format, auto-discovered from `agents/` and
+listed namespaced as `case-solvers:<name>`; do **not** add an `agents` key to the manifest — Claude
+Code rejects the whole plugin on unknown manifest keys) and `<name>.toml` (Codex format; Codex
+plugins don't auto-load agents, so
 users copy the TOMLs into `.codex/agents/`, per the README). The two files of a pair carry the same
 `developer_instructions`/body verbatim — edit them together, fork only the host-native pin fields.
 Codex's per-skill `agents/openai.yaml` opts a skill out of implicit invocation

@@ -9,6 +9,30 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.23.1] - 2026-07-18
+
+Plugin & marketplace entry `case-solvers` `2.23.0` → `2.23.1`. `/case` (`2.9.0` → `2.9.1`),
+`/refine` (`1.8.0` → `1.8.1`), `/orchestrate` (`1.4.0` → `1.4.1`).
+
+**Fixed: `gpt-5.6-luna` could slip through the planning-tier Model Guard.** Codex's current
+recommended roster tiers the GPT-5.6 family as Sol (flagship), Terra (balanced), and Luna (fast and
+affordable — the budget tier). The guard's budget markers (`haiku`/`flash`/`mini`/`lite`/`small`/
+`nano`) didn't cover `luna`, while its planning list accepts "frontier GPT-5-class" — so a literal
+reading could classify a Luna session as planning-tier and let it run `/case`, `/refine`, or
+`/orchestrate`. All three guards now list `luna` as a budget marker (`gpt-5.6-luna` as the example)
+and name `gpt-5.6-sol`/`gpt-5.6-terra` as the frontier GPT-5-class examples, replacing the stale
+`gpt-5.5-high`. Verified with `tests/model-guard.sh` per this repo's rule for any Model Guard change.
+
+**Fixed: the `agents` manifest key (added in 2.23.0) made Claude Code reject the whole plugin.**
+The installed Claude Code (2.1.214) fails manifest validation on the unknown key, so the plugin
+silently didn't load — every skill died with `Unknown command: /case`, caught as 27/27 false FAILs
+on the first `model-guard.sh` run. Isolation probes against the plugin cache pinned it precisely:
+manifest with the key → no load; same manifest without it → loads (a version⁄cache-dir mismatch was
+ruled out separately — harmless). The key is also unnecessary: Claude Code auto-discovers agent
+definitions from the plugin's `agents/` directory, listing them namespaced
+(`case-solvers:case-reviewer`), which a live probe confirmed. Dropped the key; `/evaluate`
+(`1.13.0` → `1.13.1`) now names the namespaced form.
+
 ## [2.23.0] - 2026-07-18
 
 Plugin & marketplace entry `case-solvers` `2.22.0` → `2.23.0`. `/orchestrate` (`1.3.0` → `1.4.0`),
@@ -27,8 +51,8 @@ landings already did — in the default serial mode nothing is lost at all.
 **Added: shipped reviewer agent definitions, dual-format — the model pin moves from prose to the
 harness.** `plugins/case-solvers/agents/` now carries `case-reviewer` (cheapest-frontier pin;
 Claude: Sonnet / Codex: base GPT-5-class) and `case-reviewer-strong` (strongest; Claude: Opus /
-Codex: its strongest GPT-5-class), each twice: `<name>.md` (Claude Code agent format, auto-loaded
-via the plugin manifest's new `agents` key) and `<name>.toml` (Codex agent format — Codex plugins
+Codex: its strongest GPT-5-class), each twice: `<name>.md` (Claude Code agent format, auto-discovered
+from the plugin's `agents/` directory) and `<name>.toml` (Codex agent format — Codex plugins
 don't auto-load agents yet, so the TOMLs are copy-installed into `.codex/agents/`, documented in the
 README). Both formats carry the same instructions verbatim, mirroring the repo's two-manifests-one-
 content pattern. `/evaluate` step 4b.1 now prefers these agents when the host lists them — the

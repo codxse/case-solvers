@@ -1,7 +1,7 @@
 ---
 name: orchestrate
 description: "Automate the story-by-story /solve → review → land loop for one bd epic, with a single human gate at the end. Requires a planning model, the same gate /case and /refine carry — it makes unsupervised judgment calls throughout the run and never pauses for a live human response until the final PR. Creates/checks out epic/<id>, dispatches /solve --unattended one story at a time by default (--parallel opts into dispatching a whole ready wave concurrently), runs an unattended frontier review via /evaluate --review --unattended, lands each story through /evaluate --approve --unattended serialized on bd merge-slot, then opens one PR epic/<id> → <base> with one epic-level version bump + changelog entry. The one exception: if the shared epic branch's integrity can't be verified mid-run, it halts the whole run with an incident report rather than continuing. Nothing is final until that PR merges."
-version: 1.4.0
+version: 1.4.1
 argument-hint: '<epic-id> [--dry-run] [--parallel]'
 disable-model-invocation: false
 user-invocable: true
@@ -34,10 +34,10 @@ a **planning model**, the same gate `/case` and `/refine` carry. Before touching
 2. **Emit one line, verbatim, before anything else:** `model-guard: id=<exact-id> tier=<planning|budget|unsure>`.
 3. **Classify by the ID, not by self-assessed capability:**
    - **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
-     `small`, or `nano`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
-     `gpt-5-mini`/`gpt-5-nano`). A budget marker here outranks any planning marker below.
+     `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
+     `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). A budget marker here outranks any planning marker below.
    - **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
-     Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.5-high`) / equivalent high-tier model.
+     Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) / equivalent high-tier model.
    - **unsure** — anything you cannot positively place in the planning list.
 4. **Proceed only on `tier=planning`.** On `budget` **or** `unsure`, **STOP** — do not touch git, bd,
    or dispatch anything. Reply only:
