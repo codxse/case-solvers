@@ -9,6 +9,25 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.20.0] - 2026-07-18
+
+Plugin & marketplace entry `case-solvers` `2.19.1` → `2.20.0`. `/orchestrate` (`1.0.1` → `1.1.0`).
+
+**Changed: `/orchestrate`'s readiness loop dispatches one story at a time by default; a new
+`--parallel` flag opts back into the previous behavior of dispatching a whole ready wave at once.**
+Running an epic's independent-looking stories concurrently sounded like the obvious win, but in
+practice two stories solved from the same `epic/<id>` snapshot routinely touched the same files;
+landing them one after another (still serialized through `merge-slot`, per the design) then forced
+the second to conflict against the first's own fix of that same conflict, and so on — a cascade that
+burned more tokens resolving conflicts than the stories cost to run one at a time in wall-clock time.
+Serial-by-default removes the mechanical cause: the next story is only dispatched after the previous
+one has landed, so its worktree always forks from a snapshot that already has the prior story's
+changes on it, never one that's about to go stale underneath it. `--parallel` stays available for
+epics whose stories are known to touch disjoint files/modules, where the wall-clock win is real and
+the conflict risk this default exists to avoid doesn't apply. Pre-flight's reported ready
+fronts/estimated worker-sessions/max parallelism are unchanged — still shown so the user can judge
+whether `--parallel` is worth passing for a given epic, just no longer acted on automatically.
+
 ## [2.19.1] - 2026-07-18
 
 Plugin & marketplace entry `case-solvers` `2.19.0` → `2.19.1`. `/orchestrate`

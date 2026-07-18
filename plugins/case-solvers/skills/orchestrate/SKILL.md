@@ -1,8 +1,8 @@
 ---
 name: orchestrate
-description: 'Automate the story-by-story /solve → review → land loop for one bd epic, with a single human gate at the end. Requires a planning model, the same gate /case and /refine carry — it makes unsupervised judgment calls throughout the run. Creates/checks out epic/<id>, dispatches /solve in parallel across each ready wave, runs an unattended frontier review via /evaluate --review --unattended, lands each story through /evaluate --approve serialized on bd merge-slot, then opens one PR epic/<id> → <base> with one epic-level version bump + changelog entry. Nothing is final until that PR merges.'
-version: 1.0.1
-argument-hint: '<epic-id> [--dry-run]'
+description: 'Automate the story-by-story /solve → review → land loop for one bd epic, with a single human gate at the end. Requires a planning model, the same gate /case and /refine carry — it makes unsupervised judgment calls throughout the run. Creates/checks out epic/<id>, dispatches /solve one story at a time by default (--parallel opts into dispatching a whole ready wave concurrently), runs an unattended frontier review via /evaluate --review --unattended, lands each story through /evaluate --approve serialized on bd merge-slot, then opens one PR epic/<id> → <base> with one epic-level version bump + changelog entry. Nothing is final until that PR merges.'
+version: 1.1.0
+argument-hint: '<epic-id> [--dry-run] [--parallel]'
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -69,9 +69,11 @@ are a planning model carries **no authority**. Classify from the session's model
 
 ## Trigger
 
-`/orchestrate <epic-id> [--dry-run]` — the argument is the epic id. `--dry-run` runs only the
-pre-flight validation (step 1) and reports what it finds; it never checks out the epic branch or
-dispatches anything.
+`/orchestrate <epic-id> [--dry-run] [--parallel]` — the argument is the epic id. `--dry-run` runs
+only the pre-flight validation (step 1) and reports what it finds; it never checks out the epic
+branch or dispatches anything. By default the readiness loop (step 5) dispatches **one story at a
+time**; `--parallel` opts into dispatching every story in a ready wave concurrently instead — see
+step 5 for why serial is the default.
 
 ## Workflow
 
@@ -83,7 +85,9 @@ Run `bd swarm validate <epic-id> --verbose` once, before touching git or writing
   go/no-go before continuing; these don't auto-block, but a disconnected subgraph usually means a
   story that should be wired into the epic wasn't.
 - Report the **ready fronts**, **estimated worker-sessions**, and **max parallelism** it returns —
-  useful context, not just a gate.
+  useful context, not just a gate. Without `--parallel` this run never actually dispatches more than
+  one story at a time regardless of what max parallelism reports; it's shown so the user can judge
+  whether passing `--parallel` for this epic is worth it.
 
 `--dry-run` stops here; report what you found and exit.
 
@@ -123,10 +127,25 @@ Repeat until termination (step 6):
 1. **Poll.** `bd swarm status <epic-id> --json` → Completed / Active / Ready / Blocked, computed
    live from bd's dependency graph. Intersect **Ready** with this run's scope (step 2) and drop
    anything already dispatched this run.
-2. **Dispatch, one subagent per ready story, in parallel.** Inside its own isolated worktree, each
-   subagent runs `/solve <id>` and then, once it reaches `needs-review`, the mandatory review below
-   — never touching the shared main worktree, so any number of these run concurrently without
-   conflict.
+2. **Dispatch.**
+   - **Default (serial): exactly one story per cycle.** Pick one story from the intersected Ready
+     set (bd's own return order — do not re-sort or hand-pick by perceived importance) and dispatch
+     only it. The next story is only picked up on the **next** cycle, after step 5.3 has landed this
+     one — so its worktree always forks from `epic/<epic-id>` *after* the previous story's changes
+     are already on it, never from a snapshot that's about to go stale. This is the whole point of
+     serial-by-default: two stories dispatched from the same snapshot can each edit the same file,
+     and landing them one after another then forces the second to conflict against the first's own
+     fix of that conflict, and so on — a cascade that burns far more tokens resolving conflicts than
+     running the stories one at a time ever costs in wall-clock time.
+   - **`--parallel`: every story in the ready front, concurrently.** Only pass this for an epic whose
+     stories are known to touch disjoint files/modules — the conflict cascade above is exactly the
+     failure mode this flag re-admits. Dispatch one subagent per ready story; each works inside its
+     own isolated worktree forked from `epic/<epic-id>`'s state at dispatch time, so any number of
+     these run concurrently without touching each other or the shared main worktree. Landing (step
+     5.3) still happens one at a time either way — `--parallel` only affects how many `/solve`s run
+     at once, never how many land at once.
+   - Whichever mode: each subagent runs `/solve <id>` and then, once it reaches `needs-review`, the
+     mandatory review below.
    - Read the story's `solver-<tier>` label (`bd show <id>`) and pin that subagent's model to it —
      the first place the Complexity Tier recommendation is actually acted on, not just displayed
      for a human to read. No label → dispatch unpinned.
@@ -193,7 +212,7 @@ the literal-completion version of this check would hang on one. Then:
 | record/read run scope + base | `bd comment <epic-id> "..."` / `bd show <epic-id>` |
 | live readiness | `bd swarm status <epic-id> --json` |
 | epic branch (never hardcode trunk) | `git branch --show-current` (`<origin>`); `git checkout -b epic/<epic-id> <origin>` or `git checkout epic/<epic-id>` if resuming |
-| dispatch a story | subagent pinned per `solver-<tier>` running `/solve <id>`, then the mandatory review, on `needs-review` |
+| dispatch a story | one at a time by default (next cycle after prior lands); `--parallel` dispatches the whole ready front at once. Subagent pinned per `solver-<tier>`, runs `/solve <id>`, then the mandatory review, on `needs-review` |
 | mark orchestrated | `bd label add <id> orchestrated` |
 | story effort for review | `bd show <id>` → `## Complexity` line; fall back `high` if absent |
 | unattended review-and-apply | `/evaluate <id> --review <effort> --unattended` |

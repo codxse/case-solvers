@@ -185,9 +185,11 @@ On a **frontier model** (Opus / Sonnet / Fable / Gemini Pro / GPT-5-class) — a
 - **`/refine <id>`** → revises an existing story's contract from a `/solve` spec-gap, an `/evaluate`
   change-request, or your own ask — stays WHAT-only, returns it to ready.
 - **`/orchestrate <epic-id>`** → automates the `/solve` → review → land loop across a whole epic's
-  stories in parallel, landing each on an integration branch instead of one at a time by hand, and
-  stops at a single pull request for you to review and merge — the one human gate for the epic. It
-  runs unsupervised for most of the epic, which is why it needs the same tier as `/case`/`/refine`.
+  stories, landing each on an integration branch instead of one at a time by hand, and stops at a
+  single pull request for you to review and merge — the one human gate for the epic. Stories run one
+  at a time by default (a `--parallel` flag opts into dispatching a ready wave concurrently, at the
+  cost of cross-story merge conflicts on epics whose stories touch the same files). It runs
+  unsupervised for most of the epic, which is why it needs the same tier as `/case`/`/refine`.
 
 On a **budget model** (Haiku / Gemini Flash / MiniMax-M3) — do the *how*:
 
