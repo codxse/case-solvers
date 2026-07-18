@@ -70,6 +70,44 @@ which model runs `/solve`.
 
 ---
 
+## Complexity Tier
+
+Budget-Solver Fit gates *scope and ambiguity* — every story reaching bd already fits a budget
+solver's working set. Complexity is a separate axis, judged only after that gate passes: a
+well-scoped, settled story can still call for more reasoning capability than raw execution. Judge it
+in addition to Budget-Solver Fit, never instead of it.
+
+Recommend the **cheapest tier + effort combination likely to succeed.**
+
+**Tiers** (ordinal — no model-ID pinning; the roster changes, the judgment shouldn't):
+- **budget** — mechanical: follows an existing pattern, low blast radius if subtly wrong.
+- **medium** — the cheaper end of the planning roster (e.g. Sonnet over Opus) or the strongest end of
+  the budget roster — whichever middle option the setup actually offers. One real difficulty signal
+  below, contained to a single well-understood area.
+- **frontier** — high blast radius if subtly wrong (security, auth, money, data loss), or the correct
+  approach itself takes judgment (novel algorithm, non-obvious concurrency/ordering, reconciling
+  constraints that look like they conflict).
+
+**Difficulty signals** (presence pushes up a tier; none present → budget): security/auth/crypto
+surface; concurrency, ordering, or race-condition correctness; non-obvious algorithmic or
+mathematical reasoning; subtle external library/API semantics (easy to call in a way that looks
+correct but isn't); a refactor across an unfamiliar or inconsistent existing pattern, where
+preserving behavior takes judgment, not mechanical translation.
+
+**Escalate along the axis the signal actually stresses** — don't default to raising tier for
+everything:
+- A signal about **volume** (long AC list, wide file surface, repetitive-but-mechanical work) →
+  raise **effort** within the current tier.
+- A signal about **subtlety or blast radius** (the signals above) → raise **tier**; more effort on a
+  weaker model doesn't close a capability gap.
+
+**Effort** (`low`/`medium`/`high`/`max` — this workflow's own scale) grades independently of tier.
+
+State the call as `Recommended Solver: <tier> · <effort>` plus one line naming the driving signal(s),
+or "no difficulty signal — mechanical" for budget.
+
+---
+
 ## Verification Mode
 
 Every story states a `Verification` mode telling downstream whether a human checkpoint is needed:
@@ -124,9 +162,10 @@ Before a story enters bd, scan and strip:
 - AC step written as "I" or narrating UI mechanics → rewrite declarative, third person, actor named.
 - Prose paragraph hard-wrapped across lines → join to one line (see Output Format; `gherkin` block exempt).
 
-Then self-audit: all core sections filled; a Verification mode stated; every named artifact verified
-to exist; solver dry-run each AC (could a budget solver write the test from Given/When/Then +
-Context + Glossary without making an open design decision?). A lurking decision → settle it or split.
+Then self-audit: all core sections filled; a Verification mode stated; a Complexity call made and
+stated; every named artifact verified to exist; solver dry-run each AC (could a budget solver write
+the test from Given/When/Then + Context + Glossary without making an open design decision?). A
+lurking decision → settle it or split.
 
 ---
 
@@ -183,6 +222,10 @@ Feature: [behavior under test — titled by problem type]
 
 ## Verification
 Verification: [auto | human | auto+human]   — [human/auto+human: what a person checks + how to exercise it]
+
+## Complexity
+Recommended Solver: [budget | medium | frontier] · effort [low | medium | high | max]
+[One line: which difficulty signal(s) drove the tier, or "no difficulty signal — mechanical".]
 
 ## Out of Scope
 - [Explicit things not done here]

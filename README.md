@@ -162,7 +162,9 @@ skills never prompt for codebase exploration.
 On a **frontier model** (Opus / Sonnet / Fable / Gemini Pro / GPT-5-class) — author the *what*:
 
 - **`/case <description>`** → one **story** (a precise, verifiable contract), or a big goal decomposed
-  into an **epic** (a dependency graph of stories) for you to review *before* anything is created.
+  into an **epic** (a dependency graph of stories) for you to review *before* anything is created. Each
+  story also gets a **Complexity** call — the cheapest solver tier (budget/medium/frontier) and effort
+  likely to succeed — so you know which model to run `/solve` on.
 - **`/refine <id>`** → revises an existing story's contract from a `/solve` spec-gap, an `/evaluate`
   change-request, or your own ask — stays WHAT-only, returns it to ready.
 

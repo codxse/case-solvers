@@ -1,7 +1,7 @@
 ---
 name: case
 description: 'Author one bd story, or decompose a large goal into an epic, on a planning model. Authoring only — view the board with /board, revise an existing story with /refine. Use when the user asks to open/file a case, put a problem or goal "to a case", or write a new story or epic — e.g. "let''s put our problem to a case".'
-version: 2.8.1
+version: 2.9.0
 argument-hint: '<description>'
 user-invocable: true
 ---
@@ -80,10 +80,10 @@ Invoked as `/case <description>` — the whole argument is the description to au
 ## Authoring: Story vs Epic
 
 After the guards pass, hold every contract to **Contract Rubrics** at the end of this skill —
-Authoring principles, Problem Types, Budget-Solver Fit, Verification Mode, AC Quality Rubric,
-Pre-write Guard, and Output Format. They are part of this skill and already in context: there is no
-rubric file to locate, open, or read. Never author from memory of these bars when the text is right
-there.
+Authoring principles, Problem Types, Budget-Solver Fit, Complexity Tier, Verification Mode, AC
+Quality Rubric, Pre-write Guard, and Output Format. They are part of this skill and already in
+context: there is no rubric file to locate, open, or read. Never author from memory of these bars
+when the text is right there.
 
 Then classify the problem type and draft inference-first: explore the codebase rather than ask when the
 answer is there (budget ~3 Read + 2 Grep when the user names an artifact); settle scope-affecting
@@ -111,7 +111,8 @@ committed to bd. Both story and epic modes use it.
    the current `.case.md`, apply the change, and rewrite the file. Do not print the full contract inline.
 3. **Commit on confirm.** When the user confirms ("go ahead", "looks good", or equivalent):
    - **Story:** read `.case.md`, create the bd issue with that exact content as the body
-     (`bd create "<title>" -t story`), delete `.case.md`, report the new id.
+     (`bd create "<title>" -t story`), apply `bd label add <id> solver-<tier>` from its Complexity
+     call, delete `.case.md`, report the new id.
    - **Epic:** read `.case.md` and proceed to generate the bd graph (Decomposition step 5), then delete
      `.case.md`.
 
@@ -137,18 +138,20 @@ Produce a transient review doc, get human approval, then generate the bd graph.
    until approval — catching a wrong decomposition here costs one edit; catching it after solving costs
    rework.
 5. **Generate on approve:** `bd create "<epic>" -t epic`; one `bd create "<story>" -t story` per child
-   with a `parent-child` edge to the epic; `bd dep add <blocker> --blocks <dependent>` per ordering edge.
-   Then **delete `.case.md`** — bd is now the source of truth. Report the epic id and child ids, and that
-   the board now shows them.
+   with a `parent-child` edge to the epic, plus `bd label add <id> solver-<tier>` from its own
+   Complexity call; `bd dep add <blocker> --blocks <dependent>` per ordering edge. Then **delete
+   `.case.md`** — bd is now the source of truth. Report the epic id and child ids, and that the board
+   now shows them.
 
 ---
 
 ## After Authoring
 
 Report the new id(s) and the next command:
-- Story → "Created `<id>` (`<title>`), on your board. `/board <id>` to review; `/solve <id>` on a budget
-  model." Name blockers if any.
-- Epic → "Created epic `<id>` with N stories. `/board` for the board; `/solve` any READY story."
+- Story → "Created `<id>` (`<title>`) — recommended solver: `<tier>` · `<effort>` effort. `/board <id>`
+  to review; `/solve <id>` on a matching model." Name blockers if any.
+- Epic → "Created epic `<id>` with N stories. `/board` for the board (per-child solver tiers shown
+  there); `/solve` any READY story."
 
 ---
 
@@ -158,6 +161,7 @@ Report the new id(s) and the next command:
 |---|---|
 | init backlog (first use) | `bd init` |
 | create story / epic | `bd create "<title>" -t story\|epic` (body = the contract) |
+| apply solver-tier label | `bd label add <id> solver-<tier>` (`budget`\|`medium`\|`frontier`, from the Complexity call) |
 | ordering edge (B needs A) | `bd dep add A --blocks B` |
 | epic → child | `parent-child` edge on create or `bd dep add` |
 
@@ -225,6 +229,44 @@ which model runs `/solve`.
 
 ---
 
+## Complexity Tier
+
+Budget-Solver Fit gates *scope and ambiguity* — every story reaching bd already fits a budget
+solver's working set. Complexity is a separate axis, judged only after that gate passes: a
+well-scoped, settled story can still call for more reasoning capability than raw execution. Judge it
+in addition to Budget-Solver Fit, never instead of it.
+
+Recommend the **cheapest tier + effort combination likely to succeed.**
+
+**Tiers** (ordinal — no model-ID pinning; the roster changes, the judgment shouldn't):
+- **budget** — mechanical: follows an existing pattern, low blast radius if subtly wrong.
+- **medium** — the cheaper end of the planning roster (e.g. Sonnet over Opus) or the strongest end of
+  the budget roster — whichever middle option the setup actually offers. One real difficulty signal
+  below, contained to a single well-understood area.
+- **frontier** — high blast radius if subtly wrong (security, auth, money, data loss), or the correct
+  approach itself takes judgment (novel algorithm, non-obvious concurrency/ordering, reconciling
+  constraints that look like they conflict).
+
+**Difficulty signals** (presence pushes up a tier; none present → budget): security/auth/crypto
+surface; concurrency, ordering, or race-condition correctness; non-obvious algorithmic or
+mathematical reasoning; subtle external library/API semantics (easy to call in a way that looks
+correct but isn't); a refactor across an unfamiliar or inconsistent existing pattern, where
+preserving behavior takes judgment, not mechanical translation.
+
+**Escalate along the axis the signal actually stresses** — don't default to raising tier for
+everything:
+- A signal about **volume** (long AC list, wide file surface, repetitive-but-mechanical work) →
+  raise **effort** within the current tier.
+- A signal about **subtlety or blast radius** (the signals above) → raise **tier**; more effort on a
+  weaker model doesn't close a capability gap.
+
+**Effort** (`low`/`medium`/`high`/`max` — this workflow's own scale) grades independently of tier.
+
+State the call as `Recommended Solver: <tier> · <effort>` plus one line naming the driving signal(s),
+or "no difficulty signal — mechanical" for budget.
+
+---
+
 ## Verification Mode
 
 Every story states a `Verification` mode telling downstream whether a human checkpoint is needed:
@@ -279,9 +321,10 @@ Before a story enters bd, scan and strip:
 - AC step written as "I" or narrating UI mechanics → rewrite declarative, third person, actor named.
 - Prose paragraph hard-wrapped across lines → join to one line (see Output Format; `gherkin` block exempt).
 
-Then self-audit: all core sections filled; a Verification mode stated; every named artifact verified
-to exist; solver dry-run each AC (could a budget solver write the test from Given/When/Then +
-Context + Glossary without making an open design decision?). A lurking decision → settle it or split.
+Then self-audit: all core sections filled; a Verification mode stated; a Complexity call made and
+stated; every named artifact verified to exist; solver dry-run each AC (could a budget solver write
+the test from Given/When/Then + Context + Glossary without making an open design decision?). A
+lurking decision → settle it or split.
 
 ---
 
@@ -338,6 +381,10 @@ Feature: [behavior under test — titled by problem type]
 
 ## Verification
 Verification: [auto | human | auto+human]   — [human/auto+human: what a person checks + how to exercise it]
+
+## Complexity
+Recommended Solver: [budget | medium | frontier] · effort [low | medium | high | max]
+[One line: which difficulty signal(s) drove the tier, or "no difficulty signal — mechanical".]
 
 ## Out of Scope
 - [Explicit things not done here]

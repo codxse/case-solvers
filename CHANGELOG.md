@@ -9,6 +9,47 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.18.0] - 2026-07-18
+
+Plugin & marketplace entry `case-solvers` `2.17.1` → `2.18.0`. `/case` (2.8.1 → 2.9.0), `/refine`
+(1.7.1 → 1.8.0), `/board` (1.0.0 → 1.1.0), `/solve` (1.4.1 → 1.5.0), `/evaluate` (1.8.0 → 1.9.0).
+
+**Added: a `Complexity Tier` rubric judges story difficulty and recommends a solver tier.**
+`Budget-Solver Fit` already gates *scope and ambiguity* — every story reaching bd fits a budget
+solver's working set, or it's decomposed/settled until it does. But a story can pass that gate and
+still call for more reasoning capability than raw execution — auth/crypto surfaces, concurrency,
+non-obvious algorithms, subtle library semantics, a refactor across an unfamiliar pattern. The new
+rubric is a separate axis, judged only after Budget-Solver Fit passes: it recommends the cheapest
+tier + effort combination likely to succeed (`budget`/`medium`/`frontier` × `low`/`medium`/`high`/
+`max`), recorded as a `## Complexity` section in the story body and a `solver-<tier>` bd label for
+board-table visibility. `medium` is a relative call, not a new Model Guard bucket — it means the
+cheaper end of the planning roster (e.g. Sonnet over Opus) or the strongest end of the budget roster,
+whichever middle option a given setup offers; the existing budget/planning classification in `/case`
+and `/refine` is untouched. Escalation follows the signal: a *volume* signal (long AC list, wide file
+surface) raises effort within the current tier; a *subtlety/blast-radius* signal (the difficulty
+signals above) raises tier instead — more effort on a weaker model doesn't close a capability gap.
+Purely informational — nothing enforces the recommendation; the human still picks which model runs
+`/solve <id>`.
+
+**Fixed: `/solve`'s frontier-cost warning no longer contradicts a story's own recommendation.** The
+warning previously fired on any frontier-tier run regardless of the story, which meant a story
+correctly labelled `solver-frontier`, solved deliberately on a frontier model, still got told "you're
+expensive, consider downgrading" — two advisories disagreeing on the same decision. The check now
+runs once the story is resolved (`/solve` step 1) and reads its `solver-*` label first; it's silent
+when the label already says `frontier`, unchanged otherwise.
+
+**Added: an optional calibration note at `/evaluate`.** Nothing previously checked whether a tier
+recommendation was actually right — `/refine` only re-grades after a hard failure (a `/solve`
+spec-gap bounce). On the full interactive approve flow (not the `--approve`/`--review` fast paths),
+`/evaluate` now optionally asks whether the recommended tier matched how the story actually went and
+records the answer as a `bd comment` — a data point for judging the rubric's accuracy over time, not
+a gate.
+
+This design was reviewed by a Fable-tier model before implementation, which caught that the original
+draft's `medium` tier had no concrete referent, that its effort-before-tier escalation rule was
+backwards for the exact signals the rubric names, and the `/solve` warning contradiction above — all
+three are reflected in the final rubric rather than the first draft.
+
 ## [2.17.1] - 2026-07-17
 
 Plugin & marketplace entry `case-solvers` `2.17.0` → `2.17.1`. `/case` (2.8.0 → 2.8.1), `/refine`
