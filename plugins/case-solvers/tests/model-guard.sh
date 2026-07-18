@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 #
-# model-guard.sh — verify the authoring guards (/case and /refine) are respected
-# by budget models.
+# model-guard.sh — verify the authoring guards (/case, /refine, /orchestrate) are
+# respected by budget models.
 #
-# The /case and /refine skills both author/revise contracts in bd and must STOP
-# (write nothing) when run on a budget-tier model. Each runs its Model Guard
-# FIRST — before the environment guard — so even in an empty repo a budget model
-# must emit the planning-model stop and create no backlog. This is a probabilistic
-# property of a prompt, so a single pass proves little — we run N trials per
-# invocation on a budget model and report the pass rate. A trial PASSES when the
-# model emits the stop message and writes no contract (.case.md or bd issue).
+# /case and /refine author/revise contracts in bd; /orchestrate drives a whole
+# epic unsupervised. All three must STOP (touch nothing) when run on a
+# budget-tier model. Each runs its Model Guard FIRST — before the environment
+# guard — so even in an empty repo a budget model must emit the planning-model
+# stop and create no backlog. This is a probabilistic property of a prompt, so a
+# single pass proves little — we run N trials per invocation on a budget model
+# and report the pass rate. A trial PASSES when the model emits the stop message
+# and writes no contract (.case.md, a bd issue, or an epic/* branch).
 #
 # Usage:
 #   tests/model-guard.sh [-n TRIALS] [-m MODEL] [-v]
@@ -64,6 +65,14 @@ REFINE_CMDS=(
   "/refine 7"
 )
 
+# /orchestrate invocations — same ordering requirement as /refine (Model Guard before
+# Environment Guard), so a budget model stops on "planning model" even with no epic,
+# no .beads/, and nothing to orchestrate.
+ORCHESTRATE_CMDS=(
+  "/orchestrate bd-1"
+  "/orchestrate 42"
+)
+
 # Match the refusal by its invariant, not verbatim prose: a budget model may
 # paraphrase the stop message, but a correct refusal always points at a planning
 # model. The load-bearing assertion is "authored nothing" (checked separately).
@@ -90,9 +99,12 @@ run_trial() {
   fi
 
   local authored=0 reason=""
-  # Authored a contract → the guard failed, regardless of what was printed.
+  # Authored a contract, or acted as /orchestrate's lead, → the guard failed,
+  # regardless of what was printed.
   [ -f "$dir/.case.md" ] && { authored=1; reason="wrote .case.md"; }
   [ -d "$dir/.beads" ]   && { authored=1; reason="${reason:+$reason; }created bd backlog"; }
+  [ -n "$(git -C "$dir" branch --list 'epic/*' 2>/dev/null)" ] && \
+    { authored=1; reason="${reason:+$reason; }created an epic/* branch"; }
 
   local stopped=0
   grep -qi "$STOP_RE" <<<"$out" && stopped=1
@@ -118,7 +130,7 @@ run_trial() {
 
 [ "$SYNC" -eq 1 ] && { sync_plugin || exit 1; }
 
-echo "model-guard: model=$MODEL trials/invocation=$TRIALS  /case=${#DESCRIPTIONS[@]} /refine=${#REFINE_CMDS[@]}"
+echo "model-guard: model=$MODEL trials/invocation=$TRIALS  /case=${#DESCRIPTIONS[@]} /refine=${#REFINE_CMDS[@]} /orchestrate=${#ORCHESTRATE_CMDS[@]}"
 
 run_set() {  # $1=label; remaining args = full slash invocations to trial
   local label="$1"; shift
@@ -141,8 +153,9 @@ run_set() {  # $1=label; remaining args = full slash invocations to trial
 CASE_CMDS=()
 for desc in "${DESCRIPTIONS[@]}"; do CASE_CMDS+=("/case $desc"); done
 
-run_set "case"   "${CASE_CMDS[@]}"
-run_set "refine" "${REFINE_CMDS[@]}"
+run_set "case"        "${CASE_CMDS[@]}"
+run_set "refine"      "${REFINE_CMDS[@]}"
+run_set "orchestrate" "${ORCHESTRATE_CMDS[@]}"
 
 TOTAL=$((PASS+FAIL+ERR))
 echo

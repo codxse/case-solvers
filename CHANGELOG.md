@@ -9,6 +9,66 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.19.0] - 2026-07-18
+
+Plugin & marketplace entry `case-solvers` `2.18.0` → `2.19.0`. New skill **`/orchestrate`**
+(`1.0.0`). `/evaluate` (`1.9.0` → `1.10.0`).
+
+**Added: `/orchestrate <epic-id>` automates the story-by-story `/solve` → review → land loop for
+one epic, collapsing today's manual "solve one, evaluate one, repeat" cycle into a single run with
+exactly one human gate at the end.** It checks out (or resumes) an integration branch `epic/<id>` —
+forked from whatever's checked out in the main worktree, never a hardcoded trunk, the same rule
+`/solve`/`/evaluate` already follow — and keeps the main worktree on it for the whole run, so every
+dispatched `/solve` naturally forks from it and every landed story naturally merges back onto it,
+with zero changes to `/solve` or `/evaluate`'s own base-branch logic. Each cycle it reads the
+epic's live readiness (`bd swarm status`) and dispatches `/solve` in parallel across every ready
+story, model-pinned per story to its own `solver-<tier>` label — the first place the Complexity
+Tier recommendation is actually acted on automatically, not just displayed for a human to read.
+Once a story reaches `needs-review` it always goes through a mandatory, orchestrator-judgment-free
+review pass at the effort its own `## Complexity` section recommends, then lands one at a time
+through bd's own `merge-slot` primitive — the lock bd ships specifically to stop concurrent landers
+from cascading conflicts into each other. A spec-gap or scope observation surfaced mid-run is never
+acted on by `/orchestrate` itself — authoring or revising a contract stays the human's call via
+`/case`/`/refine`; the run queues it for the final report instead. `/orchestrate` itself now also
+requires a **planning model**, the same Model Guard `/case` and `/refine` carry — it runs
+unsupervised for most of an epic (pre-flight go/no-go, stalled-story triage, the final PR's
+summary), which is exactly the kind of judgment this workflow otherwise reserves for a frontier
+tier. To keep the near-certain class of
+conflict this repo's own history is full of (virtually every skill-editing story touches the same
+four version manifests and `CHANGELOG.md`) out of the merge-slot machinery entirely,
+`/orchestrate` tells every dispatched story to leave those files alone and performs the one
+epic-level version bump + changelog entry itself, once, at the end. The run finishes by opening
+**one PR, `epic/<id>` → the branch it was forked from** — each story already its own single commit
+(`--approve`'s existing one-commit rule), so the PR reads story-by-story rather than as one
+rubber-stampable diff — and that PR is the **only** real human-loop gate: everything on `epic/<id>`
+before it is provisional until it merges. `/orchestrate` is slash-only (`agents/openai.yaml`,
+`allow_implicit_invocation: false`), the same classification as `/solve` and `/evaluate` — it
+transitively fires both, so it inherits their blast radius.
+
+**Added: `/evaluate --review [effort] --unattended`.** The existing `--review` fast path still
+hard-stops at step 4b.3 for a human "amend these into `bd/<id>`?" confirm — exactly the per-story
+pause `/orchestrate` exists to remove from its own loop. Rather than fork the review-and-apply
+mechanism into `/orchestrate` too, `/evaluate` gains one modifier: `--unattended` still spawns the
+frontier-pinned subagent, runs `/code-review <effort> --fix`, and shows what changed — it just
+replaces the human go-ahead with an automatic one. The name is deliberately explicit rather than a
+terse `--auto`: this flag skips `/evaluate`'s own core safety property, so its use is meant to be
+provisional (an epic integration branch, not `master`/`main`) with a real human review still coming
+later, at the epic's final PR — never for a human approving straight to trunk.
+
+This design was reviewed twice by a Fable-tier model before implementation. The first pass caught
+that autonomously running `/evaluate --approve` per story contradicts the repo's own human-loop
+principle unless landings happen on a reversible branch with a real gate at the end, that "judge
+whether review is needed" has no rubric and is exactly the judgment `/evaluate` exists to keep
+human, and that autonomous `/case` mid-loop breaks the "nothing commits to bd until the user
+confirms" guard. The second pass, after the user pushed back on blanket serialization (bd already
+tracks dependencies — independent stories should run in parallel), found that `/evaluate`'s own
+step 4a.4 already implements the exact conflict-handling pattern the design was about to reinvent,
+and proposed removing the mechanical conflict class by construction instead of auto-resolving it.
+Planning research on top of both reviews then found that bd itself already ships the
+`swarm`/`merge-slot` primitives this design needs, letting `/orchestrate` end up thinner than any
+draft that preceded it. The Model Guard requirement was added after implementation, at the user's
+own direction, for parity with `/case`/`/refine`'s existing gate.
+
 ## [2.18.0] - 2026-07-18
 
 Plugin & marketplace entry `case-solvers` `2.17.1` → `2.18.0`. `/case` (2.8.1 → 2.9.0), `/refine`
