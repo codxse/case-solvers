@@ -9,6 +9,40 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.22.0] - 2026-07-18
+
+Plugin & marketplace entry `case-solvers` `2.21.0` → `2.22.0`. `/evaluate` (`1.11.0` → `1.12.0`),
+`/orchestrate` (`1.2.0` → `1.3.0`).
+
+**Changed: under `--unattended`, `/evaluate --review`'s reviewer model is tier-keyed to the story's
+own `solver-<tier>` label instead of a flat strongest-model default.** An orchestrated ten-story epic
+previously paid the strongest frontier reviewer (Opus on Claude) ten times, regardless of what each
+story actually warranted — even though every story already carries a per-story cost call from the
+Complexity Tier rubric. Review cost now keys off that same call twice, with no orchestrator judgment
+in either dimension: **effort** (already wired — the `## Complexity` line's recommendation) picks the
+review's depth, and **tier** now picks the reviewer's model — `solver-budget`/`solver-medium` →
+the cheapest model on the host's frontier roster (Claude: Sonnet; Codex: its base GPT-5-class tier),
+`solver-frontier` or unlabelled → the strongest (Claude: Opus; Codex: its strongest GPT-5-class).
+Two guardrails: if the recorded assignee (the model class `/solve` wrote at claim time) is the same
+class as the chosen reviewer, the pin steps up one — a model never reviews its own class's work —
+and the frontier floor never moves: every choice stays on the frontier roster, so the existing
+never-pin-a-budget-ID rule binds unattended runs identically. The rule is stated roster-relative,
+never as hardcoded model names, matching the Complexity rubric's own "no model-ID pinning" principle
+— so it holds on both hosts unchanged, and a host whose roster offers only one frontier price point
+degrades to the old behavior rather than erroring. Interactive `--review` (a human approving one
+story straight to trunk) keeps the flat strongest-reviewer default: the savings case is the
+many-story unattended epic, not the single supervised review. Alternatives considered and rejected:
+one big end-of-epic review instead of per-story (a bug landed early gets built on by every later
+story — the same cascade economics the serial-dispatch change exists to avoid), and skipping review
+for simple stories (a judgment call with no rubric, which the mandatory-review rule exists to keep
+out of the orchestrator). The rule was validated behaviorally before landing — six dry-run trials
+(mostly on Haiku, the worst case for instruction-following, per `model-guard.sh`'s philosophy) fed
+agents the real SKILL.md plus fixture stories and checked which model they pinned: budget→Sonnet,
+frontier→Opus, medium-solved-by-Sonnet→Opus step-up, and the no-`--unattended` control all held; the
+one miss was a frontier trial misreading the step-up clause's "that same class" referent, and the
+clause was reworded (explicit referent + an explicit budget-assignee-never-steps-up sentence) in
+response.
+
 ## [2.21.0] - 2026-07-18
 
 Plugin & marketplace entry `case-solvers` `2.20.0` → `2.21.0`. `/orchestrate` (`1.1.0` → `1.2.0`),

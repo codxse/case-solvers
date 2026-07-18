@@ -1,7 +1,7 @@
 ---
 name: orchestrate
 description: "Automate the story-by-story /solve → review → land loop for one bd epic, with a single human gate at the end. Requires a planning model, the same gate /case and /refine carry — it makes unsupervised judgment calls throughout the run and never pauses for a live human response until the final PR. Creates/checks out epic/<id>, dispatches /solve --unattended one story at a time by default (--parallel opts into dispatching a whole ready wave concurrently), runs an unattended frontier review via /evaluate --review --unattended, lands each story through /evaluate --approve --unattended serialized on bd merge-slot, then opens one PR epic/<id> → <base> with one epic-level version bump + changelog entry. The one exception: if the shared epic branch's integrity can't be verified mid-run, it halts the whole run with an incident report rather than continuing. Nothing is final until that PR merges."
-version: 1.2.0
+version: 1.3.0
 argument-hint: '<epic-id> [--dry-run] [--parallel]'
 disable-model-invocation: false
 user-invocable: true
@@ -191,7 +191,11 @@ Repeat until termination (step 6):
      <low|medium|high|max>`); no such section (a pre-rubric story) → fall back to `high`,
      `/evaluate --review`'s own default. Run `/evaluate <id> --review <effort> --unattended`. This
      runs on every story that reaches review, always — never skipped, never a guess about whether
-     it's warranted.
+     it's warranted. Its cost keys off the same Complexity call twice, with no orchestrator judgment
+     in either dimension: the effort above picks the review's depth, and `/evaluate`'s `--unattended`
+     pin keys the reviewer's **model** off the story's `solver-<tier>` label (its own step 4b.1 rule)
+     — budget/medium stories get the cheapest frontier reviewer, only `solver-frontier` stories pay
+     for the strongest — so a ten-story epic doesn't pay the strongest reviewer ten times.
 3. **Land, one at a time, only in this skill's own control flow — never inside a per-story
    subagent.** For each story a subagent hands back reviewed-and-ready:
    - `bd merge-slot check` → not found → `bd merge-slot create` once.

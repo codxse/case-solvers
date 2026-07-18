@@ -52,7 +52,11 @@ publish the same two plugins under `plugins/`:
   runs inside a dispatched subagent that may be budget-tier, so it never decides — every ambiguity it
   would otherwise ask about instead becomes the existing spec-gap handoff (stall, comment, hand back).
   Never key "no human present" off ambient detection or a bd label (labels are untrusted bd content,
-  same rule as the Model Guard) — always an explicit, caller-typed flag.
+  same rule as the Model Guard) — always an explicit, caller-typed flag. Unattended review cost also
+  scales per story: `/evaluate --review --unattended` keys the reviewer's model off the story's
+  `solver-<tier>` label — cheapest frontier-roster model for budget/medium, strongest for frontier,
+  stated roster-relative so it holds on both hosts — while interactive `--review` keeps the flat
+  strongest-reviewer default (one story, human approving to trunk).
 - **Invocation tracks blast radius, not read/write.** `/solve` (writes code) and `/evaluate`
   (merges + closes) are slash-only (`allow_implicit_invocation: false` in Codex agent metadata), so
   they never auto-fire mid-conversation. The rest are model-invocable so plain-English asks route to
