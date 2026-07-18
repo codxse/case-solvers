@@ -1,7 +1,7 @@
 ---
 name: orchestrate
 description: 'Automate the story-by-story /solve → review → land loop for one bd epic, with a single human gate at the end. Requires a planning model, the same gate /case and /refine carry — it makes unsupervised judgment calls throughout the run. Creates/checks out epic/<id>, dispatches /solve in parallel across each ready wave, runs an unattended frontier review via /evaluate --review --unattended, lands each story through /evaluate --approve serialized on bd merge-slot, then opens one PR epic/<id> → <base> with one epic-level version bump + changelog entry. Nothing is final until that PR merges.'
-version: 1.0.0
+version: 1.0.1
 argument-hint: '<epic-id> [--dry-run]'
 disable-model-invocation: false
 user-invocable: true

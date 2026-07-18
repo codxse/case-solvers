@@ -97,9 +97,10 @@ codex plugin add writing-claude-md@case-solvers
 These run in your shell, not in a Codex session, and need a Codex CLI new enough to have the plugin
 subcommand — check with `codex plugin --help`. Verify the install with `codex plugin list`.
 
-On Codex, `/solve`, `/evaluate`, and `/orchestrate` are **slash-only** — they bake work into a
-branch, so they never auto-fire mid-conversation. `/case`, `/refine`, and `/board` also answer plain
-English ("put this to a case", "show the board").
+On Codex, `/solve` and `/evaluate` are **slash-only** — they bake work into a branch, so they never
+auto-fire mid-conversation. `/case`, `/refine`, `/board`, and `/orchestrate` also answer plain
+English (for example, "run the epic" or "show the board"). Invoke any plugin skill explicitly with
+its qualified name, such as `$case-solvers:orchestrate <epic-id>`.
 
 **Requirements:** the `bd` CLI on your `PATH` for `case-solvers` — see
 [the command reference below](#case-solvers--bd-backed-parallel-coding-workflow). `/orchestrate`
@@ -112,13 +113,28 @@ costs you a line of output, never a bad story.
 
 ### Updating
 
+**Claude Code**
+
 ```
-/plugin update case-solvers                 # Claude Code
-codex plugin marketplace upgrade            # Codex — refresh the snapshot, then re-add
+/plugin update case-solvers
 ```
 
-Both hosts key updates off the plugin's `version`, and install each version into its own directory —
-so restart the session after updating to pick the new one up.
+**Codex** — refresh the Git marketplace snapshot, then install the new plugin version:
+
+```sh
+codex plugin marketplace upgrade case-solvers
+codex plugin add case-solvers@case-solvers
+```
+
+For the context-writing plugin, substitute its name in the second command:
+
+```sh
+codex plugin add writing-claude-md@case-solvers
+```
+
+These run in your shell. Confirm the installed version with `codex plugin list`, then start a new
+Codex session so it reloads the updated skills. Both hosts key updates off the plugin's `version`
+and install each version into its own directory.
 
 ---
 

@@ -9,9 +9,9 @@ OpenAI Codex — their plugin layouts mirror each other, so each plugin carries 
 (`.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`) over the *same* `skills/<name>/SKILL.md`
 files, and the repo carries two marketplaces (`.claude-plugin/marketplace.json`,
 `.agents/plugins/marketplace.json`). Never fork the skill prose per host — edit the one SKILL.md.
-Host-specific invocation policy lives in Codex's per-skill `agents/openai.yaml`
-(`policy.allow_implicit_invocation: false`). Shared frontmatter must keep
-`disable-model-invocation: false` so Codex accepts and discovers the skill. The exception is behavioral guards that must hold
+Codex's per-skill `agents/openai.yaml` opts a skill out of implicit invocation
+(`policy.allow_implicit_invocation: false`); omit it when the skill should be model-invocable.
+Shared frontmatter must keep `disable-model-invocation: false` so Codex accepts and discovers the skill. The exception is behavioral guards that must hold
 on a budget model: `plugins/case-solvers/tests/model-guard.sh` runs `/case`, `/refine`, and
 `/orchestrate` on Haiku headless across multiple trials (including override-injection descriptions)
 and asserts each Model Guard stops it. It calls the real model, so it's slow and probabilistic — run
@@ -45,15 +45,15 @@ publish the same two plugins under `plugins/`:
   but it requires a **planning model** too, the same gate `/case`/`/refine` carry, since it makes
   unsupervised judgment calls throughout the run (pre-flight go/no-go, stalled-story triage, the
   final PR's summary) with no human present until that PR.
-- **Invocation tracks blast radius, not read/write.** The high-blast-radius commands that bake work
-  into a branch — `/solve` (writes code), `/evaluate` (merges + closes), and `/orchestrate` (drives
-  both across an epic) — are slash-only (`allow_implicit_invocation: false` in Codex agent metadata)
-  so they never auto-fire mid-conversation. The rest are model-invocable so plain-English asks route
-  to them: `/board` (read-only), `/refine` (names an id), and `/case` (authors a new story/epic — a
-  plain-English ask like "let's put our problem to a case" should reach it). `/case` and `/refine`
-  write to bd but are backstopped the same way: the planning-tier **Model Guard** runs first and
-  **nothing is committed to bd until the user confirms**, so an implicit fire can't silently author
-  on the wrong tier or without sign-off. Their model-invocable skills carry no
+- **Invocation tracks blast radius, not read/write.** `/solve` (writes code) and `/evaluate`
+  (merges + closes) are slash-only (`allow_implicit_invocation: false` in Codex agent metadata), so
+  they never auto-fire mid-conversation. The rest are model-invocable so plain-English asks route to
+  them: `/board` (read-only), `/refine` (names an id), `/case` (authors a new story/epic — a
+  plain-English ask like "let's put our problem to a case" should reach it), and `/orchestrate`
+  (drives an epic). `/case` and `/refine` write to bd but are backstopped the same way: the
+  planning-tier **Model Guard** runs first and **nothing is committed to bd until the user confirms**.
+  `/orchestrate` also runs its Model Guard before touching bd or git, and creates only a provisional
+  epic branch and final PR for human review. Model-invocable skills carry no
   `allow_implicit_invocation: false` gate (and no `agents/openai.yaml` at all on Codex) — presence
   of that agent metadata is the at-a-glance marker of a slash-only skill.
 - **bd is the engine, not the interface.** bd (Beads) is the durable issue store, but the

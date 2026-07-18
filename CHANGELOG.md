@@ -9,6 +9,14 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.19.1] - 2026-07-18
+
+Plugin & marketplace entry `case-solvers` `2.19.0` → `2.19.1`. `/orchestrate`
+(`1.0.0` → `1.0.1`) is now model-invocable in Codex as well as explicitly invocable. Its Codex
+`agents/openai.yaml` explicit-only override was removed; the planning-tier Model Guard and the
+provisional-branch/final-PR human gate remain unchanged. The README now documents explicit
+namespaced invocation and the two-step Codex plugin upgrade command.
+
 ## [2.19.0] - 2026-07-18
 
 Plugin & marketplace entry `case-solvers` `2.18.0` → `2.19.0`. New skill **`/orchestrate`**
