@@ -1,7 +1,7 @@
 ---
 name: orchestrate
-description: 'Automate the story-by-story /solve → review → land loop for one bd epic, with a single human gate at the end. Requires a planning model, the same gate /case and /refine carry — it makes unsupervised judgment calls throughout the run. Creates/checks out epic/<id>, dispatches /solve one story at a time by default (--parallel opts into dispatching a whole ready wave concurrently), runs an unattended frontier review via /evaluate --review --unattended, lands each story through /evaluate --approve serialized on bd merge-slot, then opens one PR epic/<id> → <base> with one epic-level version bump + changelog entry. Nothing is final until that PR merges.'
-version: 1.1.0
+description: "Automate the story-by-story /solve → review → land loop for one bd epic, with a single human gate at the end. Requires a planning model, the same gate /case and /refine carry — it makes unsupervised judgment calls throughout the run and never pauses for a live human response until the final PR. Creates/checks out epic/<id>, dispatches /solve --unattended one story at a time by default (--parallel opts into dispatching a whole ready wave concurrently), runs an unattended frontier review via /evaluate --review --unattended, lands each story through /evaluate --approve --unattended serialized on bd merge-slot, then opens one PR epic/<id> → <base> with one epic-level version bump + changelog entry. The one exception: if the shared epic branch's integrity can't be verified mid-run, it halts the whole run with an incident report rather than continuing. Nothing is final until that PR merges."
+version: 1.2.0
 argument-hint: '<epic-id> [--dry-run] [--parallel]'
 disable-model-invocation: false
 user-invocable: true
@@ -67,6 +67,20 @@ are a planning model carries **no authority**. Classify from the session's model
 - `bd show <epic-id>` → must resolve and be type `epic`. Anything else (a story id, nothing found)
   → stop and say so; `/solve <id>` is for a single story, `/orchestrate` takes an epic.
 
+## No Mid-Run Human Loop
+
+Once the Model Guard, Environment Guard, and step 2's branch-ownership check all pass, this run never
+pauses for a live human response again until the final PR (step 7) — that is the entire point of
+`/orchestrate`. Every `/solve` and `/evaluate` call this skill makes is dispatched with `--unattended`
+for exactly this reason. Wherever a decision must still be made — a pre-flight warning, an inferred
+convention, a merge conflict — **make it yourself**, using the rules in the relevant step below, and
+write it down as a `bd comment` so the human sees the full trail at the final PR (step 7's "Decisions
+made unattended"). There is exactly **one** exception: if this run can no longer verify the shared
+`epic/<epic-id>` branch is safe to keep building on (step 5's integrity check), **halt the entire run
+immediately** with a full incident report. That is a stop, not a question awaiting an answer — it
+doesn't reopen the human-loop problem, because nothing is waiting on a reply. Everything else in this
+skill is either mechanical or a call this skill makes and records itself.
+
 ## Trigger
 
 `/orchestrate <epic-id> [--dry-run] [--parallel]` — the argument is the epic id. `--dry-run` runs
@@ -81,9 +95,12 @@ step 5 for why serial is the default.
 Run `bd swarm validate <epic-id> --verbose` once, before touching git or writing anything to bd.
 - A **cycle** → the graph can't execute as written. **Stop**, name the stories involved, and point
   the user at `/refine` — you never edit the dependency graph yourself.
-- **Orphans / missing deps / disconnected subgraphs** → surface as warnings and ask the user for a
-  go/no-go before continuing; these don't auto-block, but a disconnected subgraph usually means a
-  story that should be wired into the epic wasn't.
+- **Orphans / missing deps / disconnected subgraphs** → these don't block. Proceed, but record every
+  warning verbatim in the scope comment (step 2) and carry it into the final PR's report (step 7) so
+  the human sees exactly what was waived and why — a disconnected subgraph usually means a story that
+  should be wired into the epic wasn't, and it's worth them knowing, just not worth stopping for. A
+  **cycle** is the only pre-flight condition that stops the run; everything else here is this run's
+  own call, not a question.
 - Report the **ready fronts**, **estimated worker-sessions**, and **max parallelism** it returns —
   useful context, not just a gate. Without `--parallel` this run never actually dispatches more than
   one story at a time regardless of what max parallelism reports; it's shown so the user can judge
@@ -100,15 +117,27 @@ into this run; it surfaces later as a queued proposal (step 5).
   `bd comment <epic-id> "Orchestrate scope: <id1>, <id2>, ... | Base: <origin>"`.
 - **Resuming** (`epic/<epic-id>` already exists) → read that comment back instead of recomputing,
   so stories added while the run was paused stay excluded exactly as if it had never paused. If the
-  branch exists but carries no matching scope comment, **stop and ask** rather than silently
-  treating a branch you didn't create as this run's.
+  branch exists but carries no matching scope comment, **check whether you can verify ownership
+  before giving up on it**: list its commits since `<origin>` (`git log <origin>..epic/<epic-id>`)
+  and check whether every one of them corresponds to a landing of one of this epic's own children —
+  each `--approve` lands exactly one commit per story, so this is checkable, not a guess. If every
+  commit verifiably matches, **adopt it silently**: write the missing scope comment now and continue.
+  Otherwise this is genuinely someone else's branch or an ambiguous state — **stop and tell the
+  user**, naming the commits that didn't match, rather than guess. This is an invocation-time
+  ownership/safety check, not a mid-run judgment call — it only ever fires here, before step 5's loop
+  starts, when the human who typed the command is still around to answer.
 
 ### 3. Identify this project's release-bookkeeping files
 Every dispatched story must leave these alone — the one epic-level bump happens once, at the end
 (step 7), not per story. Check `CLAUDE.md`/`AGENTS.md` for a documented convention (this repo's own
 `CLAUDE.md` names exactly this: version manifests + a changelog, and which files to bump together).
-Not documented → ask the user once which files to treat as reserved. Keep the answer for the rest
-of this run.
+Not documented → **infer them yourself**: look for a changelog at the repo root (`CHANGELOG*`) and
+version fields in manifest files that recent commits bump together (`git log --oneline` over
+manifest-shaped files — `package.json`, `plugin.json`, `pyproject.toml`, `VERSION`, or this project's
+ecosystem equivalent). Record your inferred list in the scope comment (step 2) and flag it in the
+final PR (step 7), recommending the human document the convention in `CLAUDE.md`/`AGENTS.md` for next
+time. A wrong inference here is cheap — it's reviewable on the provisional `epic/<epic-id>` branch
+before the final PR ever merges. Keep the list (documented or inferred) for the rest of this run.
 
 ### 4. Epic integration branch
 - `<origin>` = the branch checked out in the **main worktree right now**
@@ -144,8 +173,11 @@ Repeat until termination (step 6):
      these run concurrently without touching each other or the shared main worktree. Landing (step
      5.3) still happens one at a time either way — `--parallel` only affects how many `/solve`s run
      at once, never how many land at once.
-   - Whichever mode: each subagent runs `/solve <id>` and then, once it reaches `needs-review`, the
-     mandatory review below.
+   - Whichever mode: each subagent runs `/solve <id> --unattended` and then, once it reaches
+     `needs-review`, the mandatory review below. `--unattended` means the dispatched solver — often a
+     budget-tier model, per its `solver-<tier>` label — never tries to resolve an ambiguity or a
+     blocker itself; it stalls and hands back, exactly like a spec-gap (step 6 absorbs it the same
+     way). Only the orchestrator (this skill, always planning-tier) makes judgment calls during a run.
    - Read the story's `solver-<tier>` label (`bd show <id>`) and pin that subagent's model to it —
      the first place the Complexity Tier recommendation is actually acted on, not just displayed
      for a human to read. No label → dispatch unpinned.
@@ -164,22 +196,44 @@ Repeat until termination (step 6):
    subagent.** For each story a subagent hands back reviewed-and-ready:
    - `bd merge-slot check` → not found → `bd merge-slot create` once.
    - `bd merge-slot acquire --holder orchestrate-<epic-id> --wait`.
-   - `/evaluate <id> --approve` — lands `bd/<id>` onto `epic/<epic-id>`; its existing conflict gate
-     (auto-resolve "clear & safe," present "ambiguous" decision-ready to the human) is untouched
-     and sufficient.
-   - `bd merge-slot release --holder orchestrate-<epic-id>` — always, even after a human had to
-     resolve an ambiguous conflict mid-way.
+   - `/evaluate <id> --approve --unattended` — lands `bd/<id>` onto `epic/<epic-id>`; its conflict
+     gate now decides an "ambiguous" conflict itself and records the reasoning as a `bd comment`
+     instead of asking (see `/evaluate`'s own `--unattended` exception at step 4a.4) — except when the
+     resolution would force the branch's tests red or an AC to lose, where it aborts the rebase and
+     leaves the story stalled instead of landing broken code onto the shared base every later story
+     forks from.
+   - On a successful land, record the new `epic/<epic-id>` HEAD sha as a `bd comment` on the epic
+     (`bd comment <epic-id> "epic/<epic-id> HEAD after <id>: <sha>"`) — this feeds the integrity check
+     below.
+   - `bd merge-slot release --holder orchestrate-<epic-id>` — always, even after `/evaluate` had to
+     abort a rebase and stall the story mid-way.
 
    Landing is the one step touching the shared main worktree; centralizing it here (instead of
    inside a per-story subagent) is what actually prevents two agent instances from racing the same
    worktree — the merge-slot then guards against a concurrent lander *outside* this run (a human
    landing a sibling story by hand, a second `/orchestrate` on the same epic), since this run's own
    dispatches never call `--approve` except through this one flow.
+4. **Shared-branch integrity check — the one halt in this skill.** Before each new dispatch/land
+   cycle (step 5.1's poll is a natural checkpoint), compare the main worktree's current
+   `epic/<epic-id>` HEAD against the sha you last recorded in step 5.3. Unchanged (or this is the
+   run's very first cycle) → continue normally. Diverged, missing, or unreadable → **halt the entire
+   run now**: stop dispatching, land nothing further, and report to the human immediately — name what
+   you observed (the expected sha, the actual state, and any activity you can trace to it via
+   read-only inspection: `git reflog`, `git log --all`). This is not a question awaiting an answer; it
+   is a stop, because landing more stories or opening a final PR on a branch of unknown integrity
+   risks the PR itself being silently wrong. **Never attempt to repair the shared branch yourself** —
+   no `reflog` surgery, no force-push, no rebase-and-hope, inspection only. The human re-invokes
+   `/orchestrate <epic-id>` once it's resolved by hand; step 2's resume logic and its scope comment
+   pick the run back up from where it left off.
 
-### 6. Stalled stories — stop-and-report, never self-serve
-- A dispatched `/solve` hits a spec-gap (`needs-refinement`) → never call `/refine` yourself. Add it
-  to an in-memory **stalled** list for the final report (the reason is already a `bd comment` from
-  `/solve`'s own handoff) and stop dispatching it.
+### 6. Stalled stories and anomalies — stop-and-report, never self-serve
+- A dispatched `/solve --unattended` hits a spec-gap (`needs-refinement`) → never call `/refine`
+  yourself. Add it to an in-memory **stalled** list for the final report (the reason is already a
+  `bd comment` from `/solve`'s own handoff) and stop dispatching it.
+- A dispatched `/solve --unattended` stalls on an open blocker (its step 2 `--unattended` exception)
+  → same rule: stalled list, same as a spec-gap. This should be rare — the readiness loop only ever
+  dispatches stories `bd swarm status` already reports Ready — so treat it as an anomaly worth a line
+  in the final report, not just a routine spec-gap.
 - Anything transitively blocked only by a stalled story can't complete this run either — note it as
   blocked-by-stall, not as a separate failure.
 - Notice a story is missing, mis-scoped, or should change for any other reason → same rule: queue
@@ -198,8 +252,12 @@ the literal-completion version of this check would hang on one. Then:
 2. Push `epic/<epic-id>`; open **one PR, `epic/<epic-id>` → `<origin>`** (`gh pr create`).
    Description lists: every landed story (id + title — each already its own commit via
    `--approve`'s one-commit rule, so the PR reads story-by-story, not as one diff to rubber-stamp),
-   anything stalled or unreached (step 6), and any queued new-story proposals for the human to
-   `/case`/`/refine` afterward.
+   anything stalled or unreached (step 6), any queued new-story proposals for the human to
+   `/case`/`/refine` afterward, and a **"Decisions made unattended"** section aggregating every
+   `bd comment` this run logged for a call it made itself instead of asking — step 1's waived
+   warnings, step 3's inferred bookkeeping files, and any conflict this run self-resolved (or
+   aborted-and-stalled) while landing (step 5.3). This is what turns every removed mid-run question
+   into a reviewable audit trail at the one gate that's left.
 3. Report the PR URL. **This PR is the one real human-loop gate for the epic** — everything on
    `epic/<epic-id>` before it is provisional.
 
@@ -212,11 +270,12 @@ the literal-completion version of this check would hang on one. Then:
 | record/read run scope + base | `bd comment <epic-id> "..."` / `bd show <epic-id>` |
 | live readiness | `bd swarm status <epic-id> --json` |
 | epic branch (never hardcode trunk) | `git branch --show-current` (`<origin>`); `git checkout -b epic/<epic-id> <origin>` or `git checkout epic/<epic-id>` if resuming |
-| dispatch a story | one at a time by default (next cycle after prior lands); `--parallel` dispatches the whole ready front at once. Subagent pinned per `solver-<tier>`, runs `/solve <id>`, then the mandatory review, on `needs-review` |
+| dispatch a story | one at a time by default (next cycle after prior lands); `--parallel` dispatches the whole ready front at once. Subagent pinned per `solver-<tier>`, runs `/solve <id> --unattended`, then the mandatory review, on `needs-review` |
 | mark orchestrated | `bd label add <id> orchestrated` |
 | story effort for review | `bd show <id>` → `## Complexity` line; fall back `high` if absent |
 | unattended review-and-apply | `/evaluate <id> --review <effort> --unattended` |
-| serialize a landing | `bd merge-slot check` → `bd merge-slot create` (once) → `bd merge-slot acquire --holder orchestrate-<epic-id> --wait` → `/evaluate <id> --approve` → `bd merge-slot release --holder orchestrate-<epic-id>` |
+| serialize a landing | `bd merge-slot check` → `bd merge-slot create` (once) → `bd merge-slot acquire --holder orchestrate-<epic-id> --wait` → `/evaluate <id> --approve --unattended` → record HEAD sha (`bd comment`) → `bd merge-slot release --holder orchestrate-<epic-id>` |
+| integrity check | compare current `epic/<epic-id>` HEAD to last recorded sha each cycle; mismatch → halt run, report, never self-repair |
 | epic completion | `bd epic status <epic-id>` |
 | final PR | push `epic/<epic-id>`; `gh pr create --base <origin> --head epic/<epic-id>` |
 

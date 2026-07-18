@@ -1,8 +1,8 @@
 ---
 name: solve
-description: 'Implement one bd story by id in an isolated git worktree+branch (created inside the repo at .worktree/<id>), ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks.'
-version: 1.5.0
-argument-hint: '[<story-id>]'
+description: 'Implement one bd story by id in an isolated git worktree+branch (created inside the repo at .worktree/<id>), ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks. --unattended (passed by /orchestrate when dispatching headless) replaces every live question with the existing spec-gap stop-and-hand-back — never pass it when running /solve yourself.'
+version: 1.6.0
+argument-hint: '[<story-id>] [--unattended]'
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -25,6 +25,10 @@ Whether a frontier tier is *worth flagging as expensive for this story* depends 
 ## Environment Guard — Run Second
 
 - `.beads/` absent → the story can't exist; tell the user to author one with `/case <description>` first. Stop.
+
+## `--unattended` — no live human present
+
+Passed by `/orchestrate` when it dispatches this story headless inside its own subagent. **Never pass it yourself** when running `/solve <id>` directly — every ask-a-live-question path below works exactly as written without it. Under `--unattended`, wherever this skill would otherwise ask inline or invoke `AskUserQuestion`, treat the situation as unresolved instead and stop via the same mechanism already used for a spec-gap (Workflow step 4): stop, don't guess, hand back to the caller. A dispatched solver — often a budget-tier model — never makes an unsupervised judgment call to resolve an ambiguity itself; that stays a human's (or, under `/orchestrate`, the orchestrating planning-tier model's) job downstream, never this skill's.
 
 ## Division of Labor
 
@@ -71,6 +75,7 @@ Check the story's blockers (`bd ready` includes it only if unblocked; else inspe
 - **Has open blockers → STOP and reject with the reason**, then **offer to walk the chain**:
   > Story `<id>` is blocked by `<#Y "title"> (open)`. I can't start it yet. Want me to solve the blocker(s) first?
   If two or more blockers are mutually independent, add that they can be solved in parallel. Each blocker still passes its own `/evaluate` merge before this story unblocks, so the chain can't run away. Proceed only on the user's go-ahead, and only on a blocker that is itself ready.
+  **Exception — `--unattended`:** never offer or walk the chain — STOP, reject, post a one-line `bd comment` naming the open blocker(s), and stop. This should be rare under `/orchestrate` (it only ever dispatches stories `bd swarm status` already reports Ready); if it fires anyway, it's an anomaly for the caller to report, not a decision for `/solve` to make.
 
 ### 3. Claim & branch
 - `bd update <id> --claim --assignee <solver-name>` then `--status in_progress` — `<solver-name>` is your model class from the Model Check (`haiku`, `opus`, `gpt-5.6-sol`, …), so the story records which model picked it up. Claiming prevents another parallel session from grabbing the same story.
@@ -87,7 +92,7 @@ Before touching code, prove the story is followable. Catching an unfollowable st
 4. **Size check** — list the files you expect to touch. Can't list, or they span unrelated subsystems → too big for one pass.
 
 All four pass → execute (the sketches become your test plan). Any fail → **do not start coding**:
-- A single discrete question resolves it → ask inline and wait.
+- A single discrete question resolves it → ask inline and wait. (**`--unattended`: skip the inline ask — treat it exactly like the structural case below.**)
 - Structural (too abstract/big, unsettled decision, multiple gaps) → **spec-gap handoff**: `bd label add <id> needs-refinement`; post a `bd comment` listing each failed check concretely + the decomposition/concretization that would fix it; set the story back to open and release the claim (`bd update <id> --status open`); remove the worktree and delete branch `bd/<id>` (`git worktree remove .worktree/<id>` then `git branch -D bd/<id>` — nothing coded yet, safe to discard); then STOP. Tell the user: `/refine <id>` to refine the contract.
 
 ### 5. Execute the slice
@@ -113,7 +118,7 @@ If you cannot proceed on solid ground, **STOP** — don't guess, don't retry the
 
 Stop triggers: AC references something not in the codebase you can't map; two Constraints (or an AC and a Constraint) conflict; an AC isn't verifiable as written; multiple valid interpretations change behavior; required info is absent; an `auto` AC can only pass by mocking the exact boundary it asserts; the captured failure implicates an Out-of-Scope area.
 
-When stopped: emit a **Needs Clarification** report — each gap (one line, concrete) and the specific contract change that resolves it. For a discrete choice use AskUserQuestion. If the gap is in the contract itself, follow the **spec-gap handoff** in Workflow step 4 (Pre-flight Gate) and point the user to `/refine <id>`.
+When stopped: emit a **Needs Clarification** report — each gap (one line, concrete) and the specific contract change that resolves it. For a discrete choice use AskUserQuestion. (**`--unattended`: skip AskUserQuestion — follow the spec-gap handoff below instead.**) If the gap is in the contract itself, follow the **spec-gap handoff** in Workflow step 4 (Pre-flight Gate) and point the user to `/refine <id>`.
 
 **Loop guard:** a *fixable failure* (a failing test you understand) → keep fixing. The *same* verification failing twice with no new understanding, or a gap in the contract → blocking: stop. Never burn iterations guessing.
 

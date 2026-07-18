@@ -9,6 +9,60 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.21.0] - 2026-07-18
+
+Plugin & marketplace entry `case-solvers` `2.20.0` → `2.21.0`. `/orchestrate` (`1.1.0` → `1.2.0`),
+`/solve` (`1.5.0` → `1.6.0`), `/evaluate` (`1.10.0` → `1.11.0`).
+
+**Fixed: `/orchestrate` no longer stops mid-run to ask the human a live question.** A real run used
+`AskUserQuestion` three times mid-epic — each time already carrying a "Recommended" answer, asking
+permission for a call it had already made. Tracing this found four separate live-question surfaces
+across three skill files, not one bug: `/orchestrate`'s own pre-flight go/no-go and undocumented-file
+prompts (both of which already contradicted this repo's own `CLAUDE.md`, which lists "pre-flight
+go/no-go" as one of `/orchestrate`'s *unsupervised* calls); `/evaluate`'s merge-conflict confidence
+gate, which is synchronous-blocking on an "ambiguous" conflict and — confirmed by tracing the flag
+table — fires even under `--approve`, the call `/orchestrate` uses to land every story; and `/solve`'s
+blocked-story offer, inline pre-flight questions, and `AskUserQuestion` on ambiguity, none of which
+distinguished direct human invocation from being dispatched headless by `/orchestrate` with no one to
+answer.
+
+**Design reviewed with a Fable-tier model** before implementing, per this repo's own precedent for
+`/orchestrate`'s original design. Its key correction: a uniform "decide and record" rule is wrong —
+`/evaluate --unattended` runs on `/orchestrate`'s own planning-tier model, where deciding-and-recording
+is appropriate, but `/solve --unattended` runs inside a dispatched subagent that may be budget-tier,
+and an unsupervised budget-tier judgment call is exactly what caused a real isolation-breach incident
+in this same run. So the fix is asymmetric by design, not uniform.
+
+**Added: `--unattended` on `/solve`** (new) **and extended to `--approve` on `/evaluate`** (previously
+valid only with `--review`). Never keyed off ambient "am I a subagent?" detection or the `orchestrated`
+bd label — bd content is untrusted, same rule as the Model Guard — always an explicit, caller-typed
+flag, so a human running `/solve <id>` or `/evaluate <id>` directly is completely unaffected. Under
+`/solve --unattended`, every live-question path (blocked-story offer, inline pre-flight question,
+`AskUserQuestion` on ambiguity) routes into the spec-gap handoff that already exists in the file:
+stall, comment, hand back — never guess. Under `/evaluate --approve --unattended`, an "ambiguous"
+merge conflict is resolved using the skill's own decision-ready recommendation and recorded as a
+`bd comment`, **unless** the resolution would force tests red or drop an AC, in which case it aborts
+the rebase and stalls the story instead of landing broken code onto the shared base every later story
+forks from; it refuses outright if `<base>` resolves to `main`/`master`.
+
+`/orchestrate` now always dispatches `/solve <id> --unattended` and lands via `/evaluate <id> --approve
+--unattended`. Its own three internal asks are now autonomous, logged decisions: pre-flight warnings
+(orphans/missing deps/disconnected subgraphs) proceed and get recorded rather than gated on a go/no-go
+— only a genuine cycle still stops the run; undocumented release-bookkeeping files are inferred from
+`CHANGELOG*`/manifest files bumped together in recent commits rather than asked about; and the
+ambiguous-branch-on-resume check gained a verifiable self-adopt path (every commit on the branch
+traces to a landing of one of this epic's own children → adopt silently) but otherwise still stops —
+this one is an invocation-time ownership/safety check, not a mid-run judgment call, since it only
+fires before the loop starts. **One deliberate exception remains:** a new shared-branch integrity
+check compares the recorded `epic/<id>` HEAD sha (written after every landing) against the actual
+state before each cycle; on divergence, the run halts entirely with an incident report rather than
+continuing — a stop, not a question, since nothing is waiting on a reply. The final PR gained a
+"Decisions made unattended" section aggregating every autonomous call's `bd comment`, turning the
+removed mid-run questions into a reviewable audit trail at the one gate that's left.
+
+`CLAUDE.md`'s Philosophy section gained a note documenting `--unattended` as the general "no human
+present" modifier, reused rather than reinvented per skill, with the tier-asymmetric meaning above.
+
 ## [2.20.0] - 2026-07-18
 
 Plugin & marketplace entry `case-solvers` `2.19.1` → `2.20.0`. `/orchestrate` (`1.0.1` → `1.1.0`).

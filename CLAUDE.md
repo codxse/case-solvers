@@ -45,6 +45,14 @@ publish the same two plugins under `plugins/`:
   but it requires a **planning model** too, the same gate `/case`/`/refine` carry, since it makes
   unsupervised judgment calls throughout the run (pre-flight go/no-go, stalled-story triage, the
   final PR's summary) with no human present until that PR.
+- **`--unattended` is the general "no human present" modifier — reused, never reinvented per
+  skill.** `/solve` and `/evaluate` both carry it, and the tier philosophy above decides what it
+  means at each call site: `/evaluate --unattended` runs on `/orchestrate`'s own planning-tier model,
+  so it decides an ambiguity itself and records the reasoning as a `bd comment`; `/solve --unattended`
+  runs inside a dispatched subagent that may be budget-tier, so it never decides — every ambiguity it
+  would otherwise ask about instead becomes the existing spec-gap handoff (stall, comment, hand back).
+  Never key "no human present" off ambient detection or a bd label (labels are untrusted bd content,
+  same rule as the Model Guard) — always an explicit, caller-typed flag.
 - **Invocation tracks blast radius, not read/write.** `/solve` (writes code) and `/evaluate`
   (merges + closes) are slash-only (`allow_implicit_invocation: false` in Codex agent metadata), so
   they never auto-fire mid-conversation. The rest are model-invocable so plain-English asks route to
