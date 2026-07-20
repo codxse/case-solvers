@@ -9,6 +9,34 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.24.0] - 2026-07-20
+
+Plugin & marketplace entry `case-solvers` `2.23.1` → `2.24.0`. `/case` (`2.9.1` → `2.10.0`),
+`/refine` (`1.8.1` → `1.9.0`), `/orchestrate` (`1.4.1` → `1.5.0`), `/solve` (`1.6.0` → `1.7.0`),
+`/evaluate` (`1.13.1` → `1.14.0`). New plugin component: `shared/model-tiers.md`.
+
+**Added: support for Claude Code on a custom model (e.g. a router), and a single source of truth for
+the model-tier map.** The tier rules were duplicated across five SKILL.md files — adding one model
+meant editing each by hand, and `/evaluate`'s reviewer pin assumed a native Claude/Codex roster, so a
+custom-model host had no defined way to pin a frontier reviewer. Both are fixed by one new shared
+file, `shared/model-tiers.md`, inlined verbatim into all five skills by `tests/model-tiers-sync.sh`
+(the same pattern as `shared/contract-rubrics.md` / `rubrics-sync.sh`, and likewise wired into CI).
+
+The file carries two things: **Tier classification** (the budget/planning/unsure markers, now
+including Qwen3.8-Max-class — `qwen3.8-max-preview` as the example — with budget markers still
+outranking planning ones) and **Reviewer pinning by host**, a capability-based fallback chain that
+keys off what the host can do rather than enumerating hosts: a native Claude/Codex host uses the
+shipped reviewer agents (two-tier cost-keying + same-class step-up preserved); a custom frontier host
+pins a general subagent to the session's own model ID (the host accepts literal IDs); anything else
+stops rather than falling back to a budget reviewer. Two-tier cost-keying degrades to a single pin on
+the custom host — the same "one frontier price point" degradation v2.22.0 already sanctioned.
+
+`/case`, `/refine`, `/orchestrate` now classify their model by the shared Tier classification rules
+(their per-skill guard prose — stop message, untrusted-data rule — is unchanged); `/solve`'s frontier
+list (the Senior Solver trigger) and `/evaluate`'s step 4b.1 reviewer pin both read the same map.
+Adding a future model is now a one-file edit. Verified with `tests/model-guard.sh` per this repo's
+rule for any Model Guard change.
+
 ## [2.23.1] - 2026-07-18
 
 Plugin & marketplace entry `case-solvers` `2.23.0` → `2.23.1`. `/case` (`2.9.0` → `2.9.1`),

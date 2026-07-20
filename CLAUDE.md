@@ -47,7 +47,7 @@ publish the same two plugins under `plugins/`:
   `/board` stands outside the tiers — a read-only render of
   the backlog (or one story), no model gate. A skill recognizes its own tier from its system prompt
   — by **model-ID substring**, not host, so the frontier list spans both hosts (Opus/Sonnet/Fable on
-  Claude, GPT-5-class on Codex). `/orchestrate` adds no fourth tier — it drives `/solve` and
+  Claude, GPT-5-class on Codex) plus host-agnostic entries like Qwen3.8-Max-class. `/orchestrate` adds no fourth tier — it drives `/solve` and
   `/evaluate` across a whole epic's stories and stops at one pull request for the human to merge —
   but it requires a **planning model** too, the same gate `/case`/`/refine` carry, since it makes
   unsupervised judgment calls throughout the run (pre-flight go/no-go, stalled-story triage, the
@@ -63,7 +63,9 @@ publish the same two plugins under `plugins/`:
   scales per story: `/evaluate --review --unattended` keys the reviewer's model off the story's
   `solver-<tier>` label — cheapest frontier-roster model for budget/medium, strongest for frontier,
   stated roster-relative so it holds on both hosts — while interactive `--review` keeps the flat
-  strongest-reviewer default (one story, human approving to trunk).
+  strongest-reviewer default (one story, human approving to trunk). On a custom frontier host there is
+  one frontier rung, so both keys point at the session's own model and the rule degrades to a single
+  pin (see `shared/model-tiers.md`).
 - **Invocation tracks blast radius, not read/write.** `/solve` (writes code) and `/evaluate`
   (merges + closes) are slash-only (`allow_implicit_invocation: false` in Codex agent metadata), so
   they never auto-fire mid-conversation. The rest are model-invocable so plain-English asks route to
@@ -94,10 +96,10 @@ publish the same two plugins under `plugins/`:
   inlined verbatim into the `Contract Rubrics` section at the end of both SKILL.md files. Edit the
   rubrics **there**, then run `plugins/case-solvers/tests/rubrics-sync.sh --write`; never hand-edit a
   skill's generated block. The script with no flag verifies both copies and fails on drift — pure text
-  comparison, so unlike the other tests it's fast, deterministic, and needs no model. That's why it's
-  the one test wired into CI (`.github/workflows/checks.yml`, on push + PR): both hosts install this
-  plugin by copying the repo, with no build step between a commit and a user, so drift on `master` is
-  drift that ships. CI is the only gate there is.
+  comparison, so unlike the other tests it's fast, deterministic, and needs no model. That's why both
+  sync scripts are wired into CI (`.github/workflows/checks.yml`, on push + PR): both hosts install
+  this plugin by copying the repo, with no build step between a commit and a user, so drift on
+  `master` is drift that ships. CI is the only gate there is.
   - **`--write` only propagates the shared block.** If a rubric edit renames a *token* that other
     skills cite in their own prose — e.g. a `Verification` value like `auto+human`, which `/solve` and
     `/evaluate` reference *outside* the generated block — those call sites won't move with the sync.
@@ -109,6 +111,19 @@ publish the same two plugins under `plugins/`:
     `${CLAUDE_PLUGIN_ROOT}` is substituted inline in skill content by Claude Code but **not** by Codex,
     so it would fork the prose per host. Inlined text needs neither, which is why the skills carry no
     path-resolution instructions at all. Don't reintroduce a runtime read.
+- All five skills share the model-tier map in `plugins/case-solvers/shared/model-tiers.md` (Tier
+  classification — the budget/planning/unsure markers — and Reviewer pinning by host). Same pattern as
+  the contract rubrics: single source, **not read at runtime**, inlined verbatim into a `Model Tiers`
+  section of every SKILL.md. Edit the map **there**, then run
+  `plugins/case-solvers/tests/model-tiers-sync.sh --write`; never hand-edit a skill's generated block.
+  The script with no flag verifies all five copies and fails on drift — pure text comparison, wired
+  into CI like `rubrics-sync.sh`. Adding a model (or a host) is a one-file edit here, not five.
+  - **The reviewer-pin map keys off host *capability*, not a host list.** A native Claude/Codex host
+    uses the shipped reviewer agents (two-tier cost-keying + same-class step-up); a custom frontier
+    host (session model classifies as planning, e.g. `qwen3.8-max-preview`) pins a general subagent to
+    the session's own model ID; anything else stops rather than falling back to a budget reviewer. New
+    hosts fall into one of these buckets with no code change — don't reintroduce an enumerated
+    `if claude … elif codex …`.
 - `AGENTS.md` is a symlink to this file — edit `CLAUDE.md`.
 
 > If the code contradicts anything above, the code wins — update this file in the same change.

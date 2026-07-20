@@ -1,7 +1,7 @@
 ---
 name: solve
 description: 'Implement one bd story by id in an isolated git worktree+branch (created inside the repo at .worktree/<id>), ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks. --unattended (passed by /orchestrate when dispatching headless) replaces every live question with the existing spec-gap stop-and-hand-back — never pass it when running /solve yourself.'
-version: 1.6.0
+version: 1.7.0
 argument-hint: '[<story-id>] [--unattended]'
 disable-model-invocation: false
 user-invocable: true
@@ -13,12 +13,71 @@ Run as a budget-conscious solver. Read one story's contract from **bd** (the **W
 
 **bd is the engine, not the interface.** The user typed `/solve <id>`; never show raw `bd` commands or output — translate (claim, status, labels, comments) and render human-friendly. Use the bd/git map below; if a flag is uncertain or a command errors, run `bd <cmd> --help`.
 
+## Model Tiers
+
+<!-- BEGIN GENERATED FROM shared/model-tiers.md — edit there, then run tests/model-tiers-sync.sh --write -->
+
+## Tier classification
+
+Classify the session's model **by its exact ID, never by self-assessed capability** — "I can handle
+this" is not a reason to reclassify. Read the ID from the session environment / system prompt (it
+states one, e.g. `The exact model ID is claude-haiku-4-5`).
+
+- **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
+  `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
+  `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). **A budget marker outranks any planning marker below** —
+  a hypothetical `qwen3.8-max-lite` is budget, not planning.
+- **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
+  Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) /
+  Qwen3.8-Max-class (e.g. `qwen3.8-max-preview`) / equivalent high-tier model.
+- **unsure** — anything you cannot positively place in the planning list.
+
+`planning` is the frontier tier; `budget` and `unsure` are not. A skill that gates on a planning
+model (`/case`, `/refine`, `/orchestrate`) proceeds only on `planning` and stops on `budget` **or**
+`unsure`; a skill that merely notes its tier (`/solve`) treats `planning` as frontier and the rest as
+budget.
+
+## Reviewer pinning by host
+
+`/evaluate`'s request-changes path must run its review pass on a **frontier** reviewer, regardless of
+what model `/evaluate` itself runs on (it carries no model gate). How the reviewer's model is pinned
+depends on what the host can do. Detect the host from the session's model ID:
+
+| Host | Session model ID | Reviewer pin |
+|---|---|---|
+| **Claude Code** (native) | a Claude marker (`opus`/`sonnet`/`haiku`/`fable`/`mythos`) | the shipped reviewer agents — `case-reviewer` (cheapest frontier) / `case-reviewer-strong` (strongest); the pin lives in the agent definition |
+| **Codex** (native) | a GPT-5 marker (`gpt-5…`) | the shipped reviewer agents (TOMLs copied into `.codex/agents/`); same two rungs, pinned to Codex's base / strongest GPT-5-class |
+| **Custom host** (e.g. a router) | neither native marker, but classifies as **planning** (e.g. `qwen3.8-max-preview`) | a general subagent pinned to the **session's own model ID** — the host accepts literal IDs; one frontier tier |
+| **None of the above** | budget / `unsure`, and no usable native agents | **stop** — no frontier reviewer can be pinned |
+
+Take the first branch that applies:
+
+1. **Native host that lists the shipped reviewer agents** (session model carries a Claude or GPT-5
+   marker, and the host lists `case-reviewer`/`case-reviewer-strong`) → use the agents; the pin lives
+   in the definition and is enforced by the harness. Two-tier cost-keying and the same-class step-up
+   apply (the roster offers a cheapest and a strongest rung).
+2. **Else the session model classifies as planning** (a custom frontier host) → spawn a general
+   subagent pinned to the **session's own model ID**. One frontier tier — cost-keying and the
+   same-class step-up both point at it; the rule degrades to a single pin, it never errors.
+3. **Else** → **stop** and tell the user no frontier reviewer can be pinned.
+
+Rules that bind every branch:
+- **Never pin or inherit a budget ID**, and never run the review inline on `/evaluate`'s own model
+  instead of spawning a subagent. No frontier model to pin → stop; do not fall back to a budget
+  reviewer.
+- **Spawn anonymously — never pass a `name`**: named teammates can't be spawned from inside another
+  agent, and nothing needs to address the reviewer after it reports.
+
+<!-- END SHARED -->
+
+<!-- END GENERATED -->
+
 ## Model Check — Run First
 
 `/solve` is designed for a **budget model** but runs on any. Read your model ID from your system prompt and derive two things:
 
 - **Your solver name** — the model's short class name (`haiku`, `sonnet`, `opus`, `fable`, `gpt-5.6-sol`, …), used as the bd assignee at claim time (step 3) so the story records which model picked it up.
-- **Your tier.** Frontier-tier (Opus/Sonnet/Fable/Mythos/GPT-5/Gemini Pro-class) puts the **Senior Solver rules** (below) in effect for the whole run, regardless of what the story turns out to need. Any other model → budget tier, no special rules.
+- **Your tier.** Classify the ID with the **Tier classification** rules in the Model Tiers section above: `planning` = frontier tier, which puts the **Senior Solver rules** (below) in effect for the whole run regardless of what the story turns out to need; anything else (`budget`/`unsure`) = budget tier, no special rules.
 
 Whether a frontier tier is *worth flagging as expensive for this story* depends on the story itself — checked once it's resolved (step 1), not here.
 

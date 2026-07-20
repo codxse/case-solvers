@@ -20,3 +20,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: plugins/case-solvers/tests/rubrics-sync.sh
+
+  model-tiers-sync:
+    name: Model Tiers match their source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: plugins/case-solvers/tests/model-tiers-sync.sh

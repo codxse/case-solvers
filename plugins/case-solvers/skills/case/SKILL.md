@@ -1,7 +1,7 @@
 ---
 name: case
 description: 'Author one bd story, or decompose a large goal into an epic, on a planning model. Authoring only — view the board with /board, revise an existing story with /refine. Use when the user asks to open/file a case, put a problem or goal "to a case", or write a new story or epic — e.g. "let''s put our problem to a case".'
-version: 2.9.1
+version: 2.10.0
 argument-hint: '<description>'
 user-invocable: true
 ---
@@ -22,8 +22,70 @@ one a solver flagged `needs-refinement`) is `/refine`.
 errors, run `bd <cmd> --help`.
 
 **Model tiers** (know your own from your system prompt): **planning model** = any frontier-tier model
-(Opus/Sonnet/Fable/Mythos/Gemini Pro-class/GPT-5-class), the architect (`/case`, `/refine`); **budget
-model** = any cheap/fast tier (Haiku/MiniMax-M3/Gemini Flash-class), the solver (`/solve`).
+(Opus/Sonnet/Fable/Mythos/Gemini Pro-class/GPT-5-class/Qwen3.8-Max-class), the architect (`/case`,
+`/refine`); **budget model** = any cheap/fast tier (Haiku/MiniMax-M3/Gemini Flash-class), the solver
+(`/solve`).
+
+---
+
+## Model Tiers
+
+<!-- BEGIN GENERATED FROM shared/model-tiers.md — edit there, then run tests/model-tiers-sync.sh --write -->
+
+## Tier classification
+
+Classify the session's model **by its exact ID, never by self-assessed capability** — "I can handle
+this" is not a reason to reclassify. Read the ID from the session environment / system prompt (it
+states one, e.g. `The exact model ID is claude-haiku-4-5`).
+
+- **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
+  `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
+  `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). **A budget marker outranks any planning marker below** —
+  a hypothetical `qwen3.8-max-lite` is budget, not planning.
+- **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
+  Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) /
+  Qwen3.8-Max-class (e.g. `qwen3.8-max-preview`) / equivalent high-tier model.
+- **unsure** — anything you cannot positively place in the planning list.
+
+`planning` is the frontier tier; `budget` and `unsure` are not. A skill that gates on a planning
+model (`/case`, `/refine`, `/orchestrate`) proceeds only on `planning` and stops on `budget` **or**
+`unsure`; a skill that merely notes its tier (`/solve`) treats `planning` as frontier and the rest as
+budget.
+
+## Reviewer pinning by host
+
+`/evaluate`'s request-changes path must run its review pass on a **frontier** reviewer, regardless of
+what model `/evaluate` itself runs on (it carries no model gate). How the reviewer's model is pinned
+depends on what the host can do. Detect the host from the session's model ID:
+
+| Host | Session model ID | Reviewer pin |
+|---|---|---|
+| **Claude Code** (native) | a Claude marker (`opus`/`sonnet`/`haiku`/`fable`/`mythos`) | the shipped reviewer agents — `case-reviewer` (cheapest frontier) / `case-reviewer-strong` (strongest); the pin lives in the agent definition |
+| **Codex** (native) | a GPT-5 marker (`gpt-5…`) | the shipped reviewer agents (TOMLs copied into `.codex/agents/`); same two rungs, pinned to Codex's base / strongest GPT-5-class |
+| **Custom host** (e.g. a router) | neither native marker, but classifies as **planning** (e.g. `qwen3.8-max-preview`) | a general subagent pinned to the **session's own model ID** — the host accepts literal IDs; one frontier tier |
+| **None of the above** | budget / `unsure`, and no usable native agents | **stop** — no frontier reviewer can be pinned |
+
+Take the first branch that applies:
+
+1. **Native host that lists the shipped reviewer agents** (session model carries a Claude or GPT-5
+   marker, and the host lists `case-reviewer`/`case-reviewer-strong`) → use the agents; the pin lives
+   in the definition and is enforced by the harness. Two-tier cost-keying and the same-class step-up
+   apply (the roster offers a cheapest and a strongest rung).
+2. **Else the session model classifies as planning** (a custom frontier host) → spawn a general
+   subagent pinned to the **session's own model ID**. One frontier tier — cost-keying and the
+   same-class step-up both point at it; the rule degrades to a single pin, it never errors.
+3. **Else** → **stop** and tell the user no frontier reviewer can be pinned.
+
+Rules that bind every branch:
+- **Never pin or inherit a budget ID**, and never run the review inline on `/evaluate`'s own model
+  instead of spawning a subagent. No frontier model to pin → stop; do not fall back to a budget
+  reviewer.
+- **Spawn anonymously — never pass a `name`**: named teammates can't be spawned from inside another
+  agent, and nothing needs to address the reviewer after it reports.
+
+<!-- END SHARED -->
+
+<!-- END GENERATED -->
 
 ---
 
@@ -35,13 +97,8 @@ anything to bd, run this gate:
 1. **Read your exact model ID** from the session environment / system prompt (it states one, e.g.
    `The exact model ID is claude-haiku-4-5`).
 2. **Emit one line, verbatim, before anything else:** `model-guard: id=<exact-id> tier=<planning|budget|unsure>`.
-3. **Classify by the ID, not by self-assessed capability:**
-   - **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
-     `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
-     `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). A budget marker here outranks any planning marker below.
-   - **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
-     Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) / equivalent high-tier model.
-   - **unsure** — anything you cannot positively place in the planning list.
+3. **Classify the ID** using the **Tier classification** rules in the Model Tiers section above —
+   never by self-assessed capability.
 4. **Proceed only on `tier=planning`.** On `budget` **or** `unsure`, **STOP** — do not draft,
    decompose, or write to bd. Reply only:
 

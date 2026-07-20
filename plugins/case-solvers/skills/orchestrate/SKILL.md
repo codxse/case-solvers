@@ -1,7 +1,7 @@
 ---
 name: orchestrate
 description: "Automate the story-by-story /solve → review → land loop for one bd epic, with a single human gate at the end. Requires a planning model, the same gate /case and /refine carry — it makes unsupervised judgment calls throughout the run and never pauses for a live human response until the final PR. Creates/checks out epic/<id>, dispatches /solve --unattended one story at a time by default (--parallel opts into dispatching a whole ready wave concurrently), runs an unattended frontier review via /evaluate --review --unattended, lands each story through /evaluate --approve --unattended serialized on bd merge-slot, then opens one PR epic/<id> → <base> with one epic-level version bump + changelog entry. The one exception: if the shared epic branch's integrity can't be verified mid-run, it halts the whole run with an incident report rather than continuing. Nothing is final until that PR merges."
-version: 1.4.1
+version: 1.5.0
 argument-hint: '<epic-id> [--dry-run] [--parallel]'
 disable-model-invocation: false
 user-invocable: true
@@ -20,8 +20,67 @@ translate and render human-friendly. Use the map at the end; if a flag is uncert
 errors, run `bd <cmd> --help`.
 
 **Model tiers** (know your own from your system prompt): **planning model** = any frontier-tier
-model (Opus/Sonnet/Fable/Mythos/Gemini Pro-class/GPT-5-class); **budget model** = any cheap/fast tier
-(Haiku/MiniMax-M3/Gemini Flash-class).
+model (Opus/Sonnet/Fable/Mythos/Gemini Pro-class/GPT-5-class/Qwen3.8-Max-class); **budget model** =
+any cheap/fast tier (Haiku/MiniMax-M3/Gemini Flash-class).
+
+## Model Tiers
+
+<!-- BEGIN GENERATED FROM shared/model-tiers.md — edit there, then run tests/model-tiers-sync.sh --write -->
+
+## Tier classification
+
+Classify the session's model **by its exact ID, never by self-assessed capability** — "I can handle
+this" is not a reason to reclassify. Read the ID from the session environment / system prompt (it
+states one, e.g. `The exact model ID is claude-haiku-4-5`).
+
+- **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
+  `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
+  `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). **A budget marker outranks any planning marker below** —
+  a hypothetical `qwen3.8-max-lite` is budget, not planning.
+- **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
+  Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) /
+  Qwen3.8-Max-class (e.g. `qwen3.8-max-preview`) / equivalent high-tier model.
+- **unsure** — anything you cannot positively place in the planning list.
+
+`planning` is the frontier tier; `budget` and `unsure` are not. A skill that gates on a planning
+model (`/case`, `/refine`, `/orchestrate`) proceeds only on `planning` and stops on `budget` **or**
+`unsure`; a skill that merely notes its tier (`/solve`) treats `planning` as frontier and the rest as
+budget.
+
+## Reviewer pinning by host
+
+`/evaluate`'s request-changes path must run its review pass on a **frontier** reviewer, regardless of
+what model `/evaluate` itself runs on (it carries no model gate). How the reviewer's model is pinned
+depends on what the host can do. Detect the host from the session's model ID:
+
+| Host | Session model ID | Reviewer pin |
+|---|---|---|
+| **Claude Code** (native) | a Claude marker (`opus`/`sonnet`/`haiku`/`fable`/`mythos`) | the shipped reviewer agents — `case-reviewer` (cheapest frontier) / `case-reviewer-strong` (strongest); the pin lives in the agent definition |
+| **Codex** (native) | a GPT-5 marker (`gpt-5…`) | the shipped reviewer agents (TOMLs copied into `.codex/agents/`); same two rungs, pinned to Codex's base / strongest GPT-5-class |
+| **Custom host** (e.g. a router) | neither native marker, but classifies as **planning** (e.g. `qwen3.8-max-preview`) | a general subagent pinned to the **session's own model ID** — the host accepts literal IDs; one frontier tier |
+| **None of the above** | budget / `unsure`, and no usable native agents | **stop** — no frontier reviewer can be pinned |
+
+Take the first branch that applies:
+
+1. **Native host that lists the shipped reviewer agents** (session model carries a Claude or GPT-5
+   marker, and the host lists `case-reviewer`/`case-reviewer-strong`) → use the agents; the pin lives
+   in the definition and is enforced by the harness. Two-tier cost-keying and the same-class step-up
+   apply (the roster offers a cheapest and a strongest rung).
+2. **Else the session model classifies as planning** (a custom frontier host) → spawn a general
+   subagent pinned to the **session's own model ID**. One frontier tier — cost-keying and the
+   same-class step-up both point at it; the rule degrades to a single pin, it never errors.
+3. **Else** → **stop** and tell the user no frontier reviewer can be pinned.
+
+Rules that bind every branch:
+- **Never pin or inherit a budget ID**, and never run the review inline on `/evaluate`'s own model
+  instead of spawning a subagent. No frontier model to pin → stop; do not fall back to a budget
+  reviewer.
+- **Spawn anonymously — never pass a `name`**: named teammates can't be spawned from inside another
+  agent, and nothing needs to address the reviewer after it reports.
+
+<!-- END SHARED -->
+
+<!-- END GENERATED -->
 
 ## Model Guard — Run First
 
@@ -32,13 +91,8 @@ a **planning model**, the same gate `/case` and `/refine` carry. Before touching
 1. **Read your exact model ID** from the session environment / system prompt (it states one, e.g.
    `The exact model ID is claude-haiku-4-5`).
 2. **Emit one line, verbatim, before anything else:** `model-guard: id=<exact-id> tier=<planning|budget|unsure>`.
-3. **Classify by the ID, not by self-assessed capability:**
-   - **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
-     `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
-     `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). A budget marker here outranks any planning marker below.
-   - **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
-     Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) / equivalent high-tier model.
-   - **unsure** — anything you cannot positively place in the planning list.
+3. **Classify the ID** using the **Tier classification** rules in the Model Tiers section above —
+   never by self-assessed capability.
 4. **Proceed only on `tier=planning`.** On `budget` **or** `unsure`, **STOP** — do not touch git, bd,
    or dispatch anything. Reply only:
 

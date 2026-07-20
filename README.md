@@ -120,6 +120,24 @@ cp ~/.codex/plugins/cache/case-solvers/case-solvers/<version>/agents/*.toml .cod
 Without them, `/evaluate` falls back to pinning the model explicitly on a general subagent — same
 behavior, just enforced by prose rather than the harness.
 
+**Custom models (a router / custom host):** the plugin also runs on Claude Code pointed at a
+non-Anthropic model — a router or gateway. The tier map (`shared/model-tiers.md`) classifies such a
+model as **planning** when its ID matches a frontier marker (e.g. `qwen3.8-max-preview`), so `/case`,
+`/refine`, and `/orchestrate` work on it. For `/evaluate`'s reviewer pin, set
+**`CLAUDE_CODE_SUBAGENT_MODEL`** to your frontier model's ID — Claude Code applies it to every
+subagent and it **overrides** the reviewer agents' `model:` frontmatter, so the review pass runs on
+the model you name:
+
+```sh
+export CLAUDE_CODE_SUBAGENT_MODEL=qwen3.8-max-preview
+```
+
+⚠️ This variable is **global and single-valued**: it sets the model for *all* subagents (solvers and
+reviewers alike) and overrides every per-agent pin. Set it to a **frontier** model — point it at a
+budget model to save on `/solve` and the reviewer runs on that budget model too, which is exactly the
+failure the frontier pin exists to prevent. Leave it unset and `/evaluate` falls back to pinning the
+reviewer to the session's own model ID (the custom-host branch of the Reviewer-pinning map).
+
 **Gating:** `/case`, `/refine`, and `/orchestrate` require a **frontier model**; `/solve` runs on any
 tier. Each checks its own model ID and stops with a message telling you to switch, so a wrong tier
 costs you a line of output, never a bad story.
@@ -189,7 +207,8 @@ skills never prompt for codebase exploration.
 
 ### The commands
 
-On a **frontier model** (Opus / Sonnet / Fable / Gemini Pro / GPT-5-class) — author the *what*:
+On a **frontier model** (Opus / Sonnet / Fable / Gemini Pro / GPT-5-class / Qwen3.8-Max-class) —
+author the *what*:
 
 - **`/case <description>`** → one **story** (a precise, verifiable contract), or a big goal decomposed
   into an **epic** (a dependency graph of stories) for you to review *before* anything is created. Each
