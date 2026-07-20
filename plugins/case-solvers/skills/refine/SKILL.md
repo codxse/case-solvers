@@ -1,7 +1,7 @@
 ---
 name: refine
 description: 'Revise an existing bd story contract on a planning model — typically one labelled needs-refinement after a /solve spec-gap or /evaluate change-request. Applies the feedback, stays WHAT-only, returns it to ready for /solve. Use when the user asks to refine/revise/update a story by id.'
-version: 1.9.0
+version: 1.9.1
 argument-hint: '<story-id>'
 user-invocable: true
 ---
@@ -48,37 +48,6 @@ states one, e.g. `The exact model ID is claude-haiku-4-5`).
 model (`/case`, `/refine`, `/orchestrate`) proceeds only on `planning` and stops on `budget` **or**
 `unsure`; a skill that merely notes its tier (`/solve`) treats `planning` as frontier and the rest as
 budget.
-
-## Reviewer pinning by host
-
-`/evaluate`'s request-changes path must run its review pass on a **frontier** reviewer, regardless of
-what model `/evaluate` itself runs on (it carries no model gate). How the reviewer's model is pinned
-depends on what the host can do. Detect the host from the session's model ID:
-
-| Host | Session model ID | Reviewer pin |
-|---|---|---|
-| **Claude Code** (native) | a Claude marker (`opus`/`sonnet`/`haiku`/`fable`/`mythos`) | the shipped reviewer agents — `case-reviewer` (cheapest frontier) / `case-reviewer-strong` (strongest); the pin lives in the agent definition |
-| **Codex** (native) | a GPT-5 marker (`gpt-5…`) | the shipped reviewer agents (TOMLs copied into `.codex/agents/`); same two rungs, pinned to Codex's base / strongest GPT-5-class |
-| **Custom host** (e.g. a router) | neither native marker, but classifies as **planning** (e.g. `qwen3.8-max-preview`) | a general subagent pinned to the **session's own model ID** — the host accepts literal IDs; one frontier tier |
-| **None of the above** | budget / `unsure`, and no usable native agents | **stop** — no frontier reviewer can be pinned |
-
-Take the first branch that applies:
-
-1. **Native host that lists the shipped reviewer agents** (session model carries a Claude or GPT-5
-   marker, and the host lists `case-reviewer`/`case-reviewer-strong`) → use the agents; the pin lives
-   in the definition and is enforced by the harness. Two-tier cost-keying and the same-class step-up
-   apply (the roster offers a cheapest and a strongest rung).
-2. **Else the session model classifies as planning** (a custom frontier host) → spawn a general
-   subagent pinned to the **session's own model ID**. One frontier tier — cost-keying and the
-   same-class step-up both point at it; the rule degrades to a single pin, it never errors.
-3. **Else** → **stop** and tell the user no frontier reviewer can be pinned.
-
-Rules that bind every branch:
-- **Never pin or inherit a budget ID**, and never run the review inline on `/evaluate`'s own model
-  instead of spawning a subagent. No frontier model to pin → stop; do not fall back to a budget
-  reviewer.
-- **Spawn anonymously — never pass a `name`**: named teammates can't be spawned from inside another
-  agent, and nothing needs to address the reviewer after it reports.
 
 <!-- END SHARED -->
 

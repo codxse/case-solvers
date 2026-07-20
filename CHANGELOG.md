@@ -9,6 +9,25 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.24.1] - 2026-07-20
+
+Plugin & marketplace entry `case-solvers` `2.24.0` → `2.24.1`. `/case` (`2.10.0` → `2.10.1`),
+`/refine` (`1.9.0` → `1.9.1`), `/orchestrate` (`1.5.0` → `1.5.1`), `/solve` (`1.7.0` → `1.7.1`),
+`/evaluate` (`1.14.0` → `1.14.1`).
+
+**Changed: the shared model-tiers map no longer inlines reviewer-pinning into skills that never use
+it.** `shared/model-tiers.md` bundled two things — **Tier classification** (needed by all five
+skills, which each classify their own model) and **Reviewer pinning by host** (consumed only by
+`/evaluate`) — and inlined the whole bundle into every skill. That put ~30 lines of `/evaluate`-voiced
+reviewer-pinning instructions ("`/evaluate`'s request-changes path must…") into `/case`, `/refine`,
+`/solve`, and `/orchestrate`, where they were both dead weight and addressed to the wrong skill.
+
+The shared block now carries **Tier classification only**, still synced into all five skills by
+`tests/model-tiers-sync.sh`. **Reviewer pinning by host** moved into `skills/evaluate/SKILL.md` as
+native prose — `/evaluate` is its sole consumer, and its step 4b.1 already points at it — and the
+redundant host table was dropped in favor of the capability-keyed branch list it duplicated. No
+behavior change: the pinning logic is identical, just relocated and de-duplicated.
+
 ## [2.24.0] - 2026-07-20
 
 Plugin & marketplace entry `case-solvers` `2.23.1` → `2.24.0`. `/case` (`2.9.1` → `2.10.0`),
