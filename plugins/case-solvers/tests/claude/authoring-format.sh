@@ -28,7 +28,7 @@
 # is checking.
 #
 # Usage:
-#   tests/authoring-format.sh [-n TRIALS] [-m MODEL] [-v] [--no-sync]
+#   tests/claude/authoring-format.sh [-n TRIALS] [-m MODEL] [-v] [--no-sync]
 #     -n  trials per description  (default 2)
 #     -m  planning model alias    (default sonnet)
 #     -v  verbose: print each trial's raw output and the draft

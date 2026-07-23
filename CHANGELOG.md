@@ -9,6 +9,22 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+**New: `plugins/case-solvers/tests/kimi/model-guard.sh` — the Model Guard harness now covers Kimi
+Code, and the tests tree is reorganized per host.** The Kimi twin asserts the same property as the
+Claude harness (`/case`, `/refine`, `/orchestrate` must stop on a budget model, including the
+override-injection descriptions) with the same trial protocol, on `kimi-code/kimi-for-coding`. Two
+host differences are handled in the harness: under `kimi -p` a bare `/case` is sent to the model
+verbatim (skills are only resolved via the explicit `/skill:<name>` form), and a budget Kimi session
+will read a leftover `ANTHROPIC_MODEL` env var as its own ID — the harness strips the `ANTHROPIC_*`
+vars so the tier classification rests on the Kimi session's own model. Sync target differs too:
+Kimi's managed install is a whole-repo copy at `~/.kimi-code/plugins/managed/case-solvers/`, so
+`tests/kimi/lib.sh` rsyncs the repo root there. The tests tree now groups by host:
+`tests/claude/{model-guard,authoring-format}.sh` (moved, unchanged behavior) and
+`tests/kimi/model-guard.sh` (new), with host-specific install/sync helpers in each host's `lib.sh`
+and the host-agnostic pieces (`PLUGIN_ROOT`, `infra_error`) kept in `tests/lib.sh`. The sync scripts
+(`tests/rubrics-sync.sh`, `tests/model-tiers-sync.sh`) are host-agnostic and stay put — CI paths
+unchanged.
+
 ## [2.25.0] - 2026-07-23
 
 Plugin & marketplace entry `case-solvers` `2.24.1` → `2.25.0`. `/case` (`2.10.1` → `2.11.0`),

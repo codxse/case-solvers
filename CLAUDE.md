@@ -22,10 +22,15 @@ comma-separated `tools`, so users copy the `.md` files into `~/.agents/agents/`.
 Codex's per-skill `agents/openai.yaml` opts a skill out of implicit invocation
 (`policy.allow_implicit_invocation: false`); omit it when the skill should be model-invocable.
 Shared frontmatter must keep `disable-model-invocation: false` so Codex accepts and discovers the skill. The exception is behavioral guards that must hold
-on a budget model: `plugins/case-solvers/tests/model-guard.sh` runs `/case`, `/refine`, and
+on a budget model: `plugins/case-solvers/tests/claude/model-guard.sh` runs `/case`, `/refine`, and
 `/orchestrate` on Haiku headless across multiple trials (including override-injection descriptions)
-and asserts each Model Guard stops it. It calls the real model, so it's slow and probabilistic — run
-it when changing any Model Guard.
+and asserts each Model Guard stops it; `plugins/case-solvers/tests/kimi/model-guard.sh` is the Kimi
+Code twin — same property and trial protocol on `kimi-code/kimi-for-coding`, but skills are invoked
+with the explicit `/skill:<name>` form (a bare `/case` is not resolved under `kimi -p`) and the
+harness strips `ANTHROPIC_*` env vars so the budget model can't misclassify itself from a leftover
+Claude var. Both call the real model, so they're slow and probabilistic — run them when changing any
+Model Guard. Host-specific harness bits (install path, working-tree sync) live in
+`tests/claude/lib.sh` and `tests/kimi/lib.sh`; `tests/lib.sh` keeps only the host-agnostic helpers.
 
 **Kimi Code breaks the per-plugin manifest pattern.** Its GitHub install reads the manifest at the
 *repository* root only, so instead of per-plugin `.kimi-plugin/` dirs there is a single root

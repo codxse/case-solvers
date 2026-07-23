@@ -13,7 +13,7 @@
 # and writes no contract (.case.md, a bd issue, or an epic/* branch).
 #
 # Usage:
-#   tests/model-guard.sh [-n TRIALS] [-m MODEL] [-v]
+#   tests/claude/model-guard.sh [-n TRIALS] [-m MODEL] [-v]
 #     -n  trials per description  (default 3)
 #     -m  model alias to test     (default haiku — the budget tier)
 #     -v  verbose: print each trial's raw output
