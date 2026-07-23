@@ -87,7 +87,7 @@ run_trial() {
   local cmd="$1" dir out
   dir=$(mktemp -d)
   ( cd "$dir" && git init -q )
-  out=$( cd "$dir" && timeout 240 claude -p "$cmd" \
+  out=$( cd "$dir" && run_clean_env timeout 240 claude -p "$cmd" \
            --model "$MODEL" --permission-mode acceptEdits 2>&1 )
 
   local infra

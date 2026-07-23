@@ -1,6 +1,6 @@
 {
   "name": "case-solvers",
-  "version": "2.25.0",
+  "version": "2.25.1",
   "description": "A bd-backed, parallel-capable coding workflow: /case (planning model) authors stories/epics in Beads and /refine revises them, /board renders the backlog, /solve (budget model) implements one in an isolated git worktree, /evaluate merges it after human review, /orchestrate (planning model) automates the solve-review-land loop for a whole epic behind one final PR. Also ships writing-claude-md for lean project context files. Requires the bd (Beads) CLI.",
   "author": "nadiar <codex@nadiar.id>",
   "homepage": "https://github.com/codxse/case-solvers",

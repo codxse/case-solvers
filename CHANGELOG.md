@@ -9,6 +9,24 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+**Added Codex Model Guard coverage and host-authenticated model identity.**
+`plugins/case-solvers/tests/codex/model-guard.sh` is now the third host twin: it runs `/case`,
+`/refine`, and `/orchestrate` through explicit `$case-solvers:<skill>` mentions on the budget
+`gpt-5.6-luna` model, asserts the exact `model-guard` classification as well as the refusal, and
+checks that no contract, backlog, or epic branch was authored. The new Codex host helper resolves
+and overlays the active installed cache before each run. A failing-first probe exposed the real
+host gap: Codex's model-visible base prompt said only `GPT-5`, so Luna classified itself as planning
+and authored. The default plugin `SessionStart` / `PreCompact` hook now reads Codex's
+host-provided `model` field and injects that exact slug beside the existing workflow primer.
+
+**Hardened all real-model test environments.** All three guard harnesses now launch their model CLI
+through a minimal environment allowlist: this closes the diagnostic leak found when a failed Kimi
+trial printed unrelated caller credentials while searching for its model ID. Kimi's existing host
+limitation remains: its hook payload does not expose the active `-m` override, so occasional
+misclassification from a mismatched `default_model` is reported as a probabilistic test failure.
+
+Plugin & marketplace entry `case-solvers` `2.25.0` → `2.25.1`; no skill prose changed.
+
 **New: `plugins/case-solvers/tests/kimi/model-guard.sh` — the Model Guard harness now covers Kimi
 Code, and the tests tree is reorganized per host.** The Kimi twin asserts the same property as the
 Claude harness (`/case`, `/refine`, `/orchestrate` must stop on a budget model, including the

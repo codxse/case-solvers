@@ -14,6 +14,29 @@ PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # whole repo, not just the plugin dir).
 REPO_ROOT="$(cd "$PLUGIN_ROOT/.." && pwd)"
 
+# Run a model CLI with only the process state it needs for local auth, command
+# discovery, and stable text output. A guard slip may cause the model to inspect
+# its shell environment; do not let a probabilistic test inherit unrelated
+# credentials from the operator's session.
+run_clean_env() {
+  local test_path
+  local env_args=()
+  test_path="$HOME/.local/bin:$HOME/.kimi-code/bin:/usr/local/bin:/usr/bin:/bin"
+  env_args+=(
+    HOME="$HOME"
+    PATH="$test_path"
+    USER="${USER:-model-guard}"
+    LANG=C.UTF-8
+    LC_ALL=C.UTF-8
+    TERM=dumb
+    NO_COLOR=1
+    GIT_TERMINAL_PROMPT=0
+  )
+  [ -n "${CODEX_HOME:-}" ] && env_args+=(CODEX_HOME="$CODEX_HOME")
+  [ -n "${CLAUDE_CONFIG_DIR:-}" ] && env_args+=(CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG_DIR")
+  env -i "${env_args[@]}" "$@"
+}
+
 # Classify output that means the trial never actually reached the model — a session
 # or rate limit, an overloaded/API error, or empty output. Such a run proves nothing
 # about the guard or the format, so the caller scores it ERROR (inconclusive), not a

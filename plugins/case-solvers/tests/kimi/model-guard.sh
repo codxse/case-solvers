@@ -25,10 +25,9 @@
 # * In `kimi -p` mode a bare `/case` is NOT resolved to the skill — the text is
 #   sent to the model verbatim and it just does the task. Skills must be invoked
 #   with the explicit `/skill:<name>` form (per the slash-commands reference).
-# * Headless `kimi -p` inherits the caller's environment, and a budget model
-#   hunting for its model ID will read ANTHROPIC_MODEL & friends and misclassify
-#   itself. The harness strips those vars so the classification rests on the
-#   Kimi session's own ID.
+# * Headless `kimi -p` inherits the caller's environment. The harness gives it
+#   a minimal allowlist so a guard slip cannot inspect unrelated credentials or
+#   mistake another host's model variables for the Kimi session's own ID.
 #
 # NOTE: headless `kimi -p` loads the *installed* plugin copy (under
 # ~/.kimi-code/plugins/managed/...), not this working tree. The harness overlays
@@ -53,14 +52,6 @@ while [ $# -gt 0 ]; do
     *) echo "usage: $0 [-n TRIALS] [-m MODEL] [-v] [--no-sync]" >&2; exit 2 ;;
   esac
 done
-
-# Env vars a model could mistake for its own ID when the skill tells it to read
-# the ID "from the session environment". Strip them so a budget Kimi session
-# can't talk itself into planning-tier by finding a leftover Claude var.
-SANITIZE_ENV=(
-  ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL ANTHROPIC_DEFAULT_OPUS_MODEL
-  ANTHROPIC_DEFAULT_SONNET_MODEL ANTHROPIC_DEFAULT_HAIKU_MODEL CLAUDECODE
-)
 
 # /case descriptions that look "easy" — the case the skill explicitly warns about,
 # where a budget model is tempted to rationalize "I can handle this" and author anyway.
@@ -102,13 +93,12 @@ FAILLOG=$(mktemp)
 
 # Returns: 0=PASS, 1=FAIL, 2=ERROR (trial never reached the model — inconclusive).
 run_trial() {
-  local cmd="$1" dir out env_args=() v
-  for v in "${SANITIZE_ENV[@]}"; do env_args+=(-u "$v"); done
+  local cmd="$1" dir out
   dir=$(mktemp -d)
   ( cd "$dir" && git init -q )
   # `kimi -p` is non-interactive and auto-approves regular tool calls (the
   # acceptEdits equivalent) — no permission flag exists or is needed.
-  out=$( cd "$dir" && timeout 240 env "${env_args[@]}" kimi -p "$cmd" -m "$MODEL" 2>&1 )
+  out=$( cd "$dir" && run_clean_env timeout 240 kimi -p "$cmd" -m "$MODEL" 2>&1 )
 
   local infra
   if infra=$(infra_error "$out"); then
