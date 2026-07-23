@@ -9,6 +9,48 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+## [2.25.0] - 2026-07-23
+
+Plugin & marketplace entry `case-solvers` `2.24.1` → `2.25.0`. `/case` (`2.10.1` → `2.11.0`),
+`/refine` (`1.9.1` → `1.10.0`), `/orchestrate` (`1.5.1` → `1.6.0`), `/solve` (`1.7.1` → `1.8.0`),
+`/evaluate` (`1.14.1` → `1.15.0`). New plugin component: `kimi.plugin.json` (repo root).
+
+**Added: Kimi Code as a third host.** One manifest at the repository root, `kimi.plugin.json`,
+makes the whole repo installable in Kimi Code CLI with a single
+`/plugins install https://github.com/codxse/case-solvers`. Kimi's GitHub install reads the manifest
+at the repo root only — there is no per-plugin granularity — so the root manifest declares both
+skills trees (`plugins/case-solvers/skills/`, `plugins/writing-claude-md/skills/`) and ships both
+marketplace plugins as one Kimi plugin named `case-solvers`. The skill bodies are unchanged: the
+same shared `skills/` tree now serves three hosts. The Claude session-primer hook is ported into
+the manifest's `hooks` (`SessionStart` + `PreCompact`, both supported by Kimi) using
+`$KIMI_PLUGIN_ROOT`, which Kimi exports to plugin hooks.
+
+**`shared/model-tiers.md`: Kimi K3-class joins the planning tier, K2-class / `kimi-for-coding` are
+budget — and `/evaluate`'s reviewer-pinning branch list gets a Kimi branch.** `k3` / `kimi-k3…` IDs
+classify as **planning**, so `/case`, `/refine`, and `/orchestrate` run on a K3 session; `kimi-k2`
+joins the budget substring markers and Kimi Code's `kimi-for-coding` is named a budget tier, so
+K2-class sessions (K2.5, K2.7) solve. The reviewer-pinning rules live natively in
+`skills/evaluate/SKILL.md` since 2.24.1 (its sole consumer); there, native Kimi Code joins the
+custom-frontier-host branch: on a planning (K3-class) session the reviewer runs on the session's
+own model ID — one frontier rung, the same degradation a custom host already had — spawned as the
+copied `case-reviewer` agent when the user has installed it (see below), else as a general
+subagent; on a budget session there is no frontier model to pin, so the request-changes path stops
+rather than review on a budget model. The tier markers sync into all five skills by
+`tests/model-tiers-sync.sh --write`; no hand-edited blocks.
+
+**Reviewer agents on Kimi Code via `~/.agents/agents/`.** Kimi plugins can't ship subagent
+definitions, but Kimi's agent loader reads the Claude-format `agents/*.md` verbatim — it ignores
+the `model:` pin and accepts the comma-separated `tools` string — so the README has Kimi users copy
+the two reviewer `.md` files into `~/.agents/agents/` once, the same pattern as the Codex TOML
+copy. With them listed, `/evaluate` spawns `case-reviewer` (reviewer prompt + narrowed tools from
+the definition); the model is still the session's own, since Kimi has no per-agent model field, so
+the K3-class requirement is unchanged.
+
+Known host gaps, documented in the README: Kimi has no per-skill implicit-invocation gate (no
+equivalent of Codex's `agents/openai.yaml`), so the slash-only rule for `/solve` and `/evaluate`
+rests on the skills' own prose; and skills are invoked as `/skill:<name>` or in plain English —
+there are no `/case`-style slash commands on this host.
+
 ## [2.24.1] - 2026-07-20
 
 Plugin & marketplace entry `case-solvers` `2.24.0` → `2.24.1`. `/case` (`2.10.0` → `2.10.1`),

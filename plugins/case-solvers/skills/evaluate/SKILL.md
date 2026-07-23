@@ -1,7 +1,7 @@
 ---
 name: evaluate
 description: 'Human review gate for a needs-review story by id: opens its branch diff in VSCode, then enacts the verdict — approve (land it on the branch it was forked from — `main`, `master`, or a feature branch — close, unblock dependents) or request changes. Request changes spawns a frontier-pinned subagent (pinned per host — the strongest reviewer agent on a native Claude/Codex host, the session''s own model ID on a custom frontier host; under --unattended the pin keys off the solver-<tier> label of the story — cheapest frontier model for budget/medium stories, strongest for frontier — never the ambient model) that runs /code-review and applies the fixes in place, shows you the applied diff, and amends bd/<id> only after you confirm; a wrong contract instead routes to /refine. --approve lands it on its base branch without opening the diff; --review [effort] runs the code-review pass straight away (default high); either can add --unattended, for /orchestrate driving an unattended run onto a provisional epic branch — never for a human approving straight to master/main: on --review it auto-applies without the amend-confirm, on --approve it also self-resolves an otherwise-ambiguous merge conflict (recording the reasoning) instead of asking, unless the resolution would force tests red or drop an AC, where it aborts and stalls the story instead of landing broken code; --note <text> steers the review and/or annotates the story.'
-version: 1.14.1
+version: 1.15.0
 argument-hint: '[<story-id>] [--approve [--unattended]] [--review [effort] [--unattended]] [--note <text>]'
 disable-model-invocation: false
 user-invocable: true
@@ -26,12 +26,14 @@ this" is not a reason to reclassify. Read the ID from the session environment / 
 states one, e.g. `The exact model ID is claude-haiku-4-5`).
 
 - **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
-  `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
-  `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). **A budget marker outranks any planning marker below** —
-  a hypothetical `qwen3.8-max-lite` is budget, not planning.
+  `small`, `nano`, `luna`, or `kimi-k2`, or names a known budget tier (e.g. MiniMax-M-class, Gemini
+  Flash-class, `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`, Kimi Code's `kimi-for-coding`). **A budget
+  marker outranks any planning marker below** — a hypothetical `qwen3.8-max-lite` is budget, not
+  planning.
 - **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
   Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) /
-  Qwen3.8-Max-class (e.g. `qwen3.8-max-preview`) / equivalent high-tier model.
+  Qwen3.8-Max-class (e.g. `qwen3.8-max-preview`) / Kimi-K3-class (`k3`, `kimi-k3…`) / equivalent
+  high-tier model.
 - **unsure** — anything you cannot positively place in the planning list.
 
 `planning` is the frontier tier; `budget` and `unsure` are not. A skill that gates on a planning
@@ -55,9 +57,13 @@ what the host can do — not an enumerated host list. Take the first branch that
    apply — the roster offers a cheapest frontier rung (`case-reviewer`) and a strongest
    (`case-reviewer-strong`).
 2. **Else the session model classifies as planning** (a custom frontier host, e.g.
-   `qwen3.8-max-preview`) → spawn a general subagent pinned to the **session's own model ID** — the
-   host accepts literal IDs. One frontier tier: cost-keying and the same-class step-up both point at
-   it; the rule degrades to a single pin, it never errors.
+   `qwen3.8-max-preview`; or native Kimi Code on K3-class) → one frontier rung: the **session's own
+   model ID**. Spawn a general subagent pinned to it — the host accepts literal IDs — except on Kimi
+   Code when the user has copied the reviewer `.md` files into `~/.agents/agents/` (per the README)
+   and the host lists `case-reviewer`: spawn that agent instead (same reviewer prompt, narrowed
+   tools) — its `model:` field is ignored by this host, so it still runs on the session model.
+   Cost-keying and the same-class step-up both point at the one rung; the rule degrades to a single
+   pin, it never errors.
 3. **Else** (budget / `unsure`, no usable native agents) → **stop** and tell the user no frontier
    reviewer can be pinned.
 

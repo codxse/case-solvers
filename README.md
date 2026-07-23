@@ -1,6 +1,6 @@
 # Case Solvers
 
-Two agent plugins for **Claude Code** and **OpenAI Codex** — same skills, either host.
+Two agent plugins for **Claude Code**, **OpenAI Codex**, and **Kimi Code** — same skills, any host.
 
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
@@ -73,7 +73,8 @@ solve many in parallel — but you never type a `bd` command. The skills keep it
 
 ## Install
 
-Same two plugins on either host. Add the marketplace once, then install what you want.
+Same two plugins on Claude Code and Codex (one combined plugin on Kimi Code — see below). Add the
+marketplace once, then install what you want.
 
 **Claude Code**
 
@@ -102,6 +103,26 @@ auto-fire mid-conversation. `/case`, `/refine`, `/board`, and `/orchestrate` als
 English (for example, "run the epic" or "show the board"). Invoke any plugin skill explicitly with
 its qualified name, such as `$case-solvers:orchestrate <epic-id>`.
 
+**Kimi Code**
+
+```
+/plugins install https://github.com/codxse/case-solvers
+```
+
+Type it in a Kimi Code session (not your shell), then run `/reload` (or `/new`) — plugin changes
+don't apply to the current session. Kimi's GitHub install reads the manifest at the repository
+root, so both marketplace plugins ship as **one** Kimi plugin named `case-solvers` carrying all
+seven skills; there is no per-plugin pick on this host. Verify with `/plugins list`, or open the
+manager with `/plugins`.
+
+Invoke the skills as `/skill:case`, `/skill:solve`, …, or in plain English — Kimi doesn't register
+`/case`-style slash commands for plugin skills. The session primer hook (`SessionStart` /
+`PreCompact`) is ported and active. One host gap to know: there is no per-skill
+implicit-invocation gate (no equivalent of Codex's `agents/openai.yaml`), so `/solve` and
+`/evaluate` rely on their own prose to stay slash-only. Plugins also can't ship subagent
+definitions on this host — for `/evaluate`'s reviewer, see the copy step under *Reviewer agents*
+below.
+
 **Requirements:** the `bd` CLI on your `PATH` for `case-solvers` — see
 [the command reference below](#case-solvers--bd-backed-parallel-coding-workflow). `/orchestrate`
 additionally needs the `gh` CLI, authenticated, for opening its final PR. `writing-claude-md` has no
@@ -118,7 +139,22 @@ cp ~/.codex/plugins/cache/case-solvers/case-solvers/<version>/agents/*.toml .cod
 ```
 
 Without them, `/evaluate` falls back to pinning the model explicitly on a general subagent — same
-behavior, just enforced by prose rather than the harness.
+behavior, just enforced by prose rather than the harness. On **Kimi Code**, plugins can't carry
+agent definitions either, but Kimi's agent loader reads the Claude-format `.md` files verbatim (it
+ignores the `model:` pin and accepts the comma-separated `tools`), so copy them into your user
+agents directory once:
+
+```sh
+mkdir -p ~/.agents/agents
+cp ~/.kimi-code/plugins/managed/case-solvers/plugins/case-solvers/agents/*.md ~/.agents/agents/
+```
+
+(If you set `KIMI_CODE_HOME`, the managed copy lives under it instead; re-copy after a plugin
+update.) With them, `/evaluate` spawns `case-reviewer` — the reviewer prompt and narrowed tools
+come from the definition — but the model pin can't: Kimi ignores the `model:` field, so the
+reviewer runs on the session's own model. One frontier rung on this host either way: the
+request-changes path needs a planning (K3-class) session, and on a budget session
+(`kimi-for-coding`, K2-class) it stops rather than review on a budget model.
 
 **Custom models (a router / custom host):** the plugin also runs on Claude Code pointed at a
 non-Anthropic model — a router or gateway. The tier map (`shared/model-tiers.md`) classifies such a
@@ -167,6 +203,13 @@ These run in your shell. Confirm the installed version with `codex plugin list`,
 Codex session so it reloads the updated skills. Both hosts key updates off the plugin's `version`
 and install each version into its own directory.
 
+**Kimi Code** — repeat the install in a session (it fetches the latest default branch), then
+`/reload`:
+
+```
+/plugins install https://github.com/codxse/case-solvers
+```
+
 ---
 
 ## `case-solvers` — bd-backed, parallel coding workflow
@@ -207,8 +250,8 @@ skills never prompt for codebase exploration.
 
 ### The commands
 
-On a **frontier model** (Opus / Sonnet / Fable / Gemini Pro / GPT-5-class / Qwen3.8-Max-class) —
-author the *what*:
+On a **frontier model** (Opus / Sonnet / Fable / Gemini Pro / GPT-5-class / Qwen3.8-Max-class /
+Kimi-K3-class) — author the *what*:
 
 - **`/case <description>`** → one **story** (a precise, verifiable contract), or a big goal decomposed
   into an **epic** (a dependency graph of stories) for you to review *before* anything is created. Each
@@ -223,7 +266,8 @@ author the *what*:
   cost of cross-story merge conflicts on epics whose stories touch the same files). It runs
   unsupervised for most of the epic, which is why it needs the same tier as `/case`/`/refine`.
 
-On a **budget model** (Haiku / Gemini Flash / MiniMax-M3) — do the *how*:
+On a **budget model** (Haiku / Gemini Flash / MiniMax-M3 / Kimi-K2-class incl. `kimi-for-coding`) —
+do the *how*:
 
 - **`/solve <id>`** → refuses if the story is blocked; otherwise claims it, works test-first in its
   own git **worktree+branch**, and stops at *done · review*. Never merges.

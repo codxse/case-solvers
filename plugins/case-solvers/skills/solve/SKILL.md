@@ -1,7 +1,7 @@
 ---
 name: solve
 description: 'Implement one bd story by id in an isolated git worktree+branch (created inside the repo at .worktree/<id>), ending at needs-review for /evaluate. Budget model expected; warns on a planning model, never blocks. --unattended (passed by /orchestrate when dispatching headless) replaces every live question with the existing spec-gap stop-and-hand-back — never pass it when running /solve yourself.'
-version: 1.7.1
+version: 1.8.0
 argument-hint: '[<story-id>] [--unattended]'
 disable-model-invocation: false
 user-invocable: true
@@ -24,12 +24,14 @@ this" is not a reason to reclassify. Read the ID from the session environment / 
 states one, e.g. `The exact model ID is claude-haiku-4-5`).
 
 - **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
-  `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
-  `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). **A budget marker outranks any planning marker below** —
-  a hypothetical `qwen3.8-max-lite` is budget, not planning.
+  `small`, `nano`, `luna`, or `kimi-k2`, or names a known budget tier (e.g. MiniMax-M-class, Gemini
+  Flash-class, `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`, Kimi Code's `kimi-for-coding`). **A budget
+  marker outranks any planning marker below** — a hypothetical `qwen3.8-max-lite` is budget, not
+  planning.
 - **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
   Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) /
-  Qwen3.8-Max-class (e.g. `qwen3.8-max-preview`) / equivalent high-tier model.
+  Qwen3.8-Max-class (e.g. `qwen3.8-max-preview`) / Kimi-K3-class (`k3`, `kimi-k3…`) / equivalent
+  high-tier model.
 - **unsure** — anything you cannot positively place in the planning list.
 
 `planning` is the frontier tier; `budget` and `unsure` are not. A skill that gates on a planning

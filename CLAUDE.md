@@ -1,11 +1,12 @@
-# Case Solvers — a Claude Code & Codex plugin marketplace
+# Case Solvers — a Claude Code, Codex & Kimi Code plugin marketplace
 
 This repo ships agent **plugins**, not an application. The "source" is prompt files (`SKILL.md`), so
 there is no unit-test suite — verifying a change usually means reading the prompt and the
 `CHANGELOG.md`, then running the skill.
 
-**Two hosts, one `skills/` tree.** The skill bodies are shared verbatim between Claude Code and
-OpenAI Codex — their plugin layouts mirror each other, so each plugin carries two manifests
+**Three hosts, one `skills/` tree.** The skill bodies are shared verbatim between Claude Code,
+OpenAI Codex, and Kimi Code — the Claude Code and Codex plugin layouts mirror each other, so each
+plugin carries two manifests
 (`.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`) over the *same* `skills/<name>/SKILL.md`
 files, and the repo carries two marketplaces (`.claude-plugin/marketplace.json`,
 `.agents/plugins/marketplace.json`). Never fork the skill prose per host — edit the one SKILL.md.
@@ -14,7 +15,9 @@ each reviewer agent twice — `<name>.md` (Claude Code format, auto-discovered f
 listed namespaced as `case-solvers:<name>`; do **not** add an `agents` key to the manifest — Claude
 Code rejects the whole plugin on unknown manifest keys) and `<name>.toml` (Codex format; Codex
 plugins don't auto-load agents, so
-users copy the TOMLs into `.codex/agents/`, per the README). The two files of a pair carry the same
+users copy the TOMLs into `.codex/agents/`, per the README). On Kimi Code the same `<name>.md`
+doubles as the agent definition — Kimi's loader ignores the Claude `model:` field and accepts the
+comma-separated `tools`, so users copy the `.md` files into `~/.agents/agents/`. The two files of a pair carry the same
 `developer_instructions`/body verbatim — edit them together, fork only the host-native pin fields.
 Codex's per-skill `agents/openai.yaml` opts a skill out of implicit invocation
 (`policy.allow_implicit_invocation: false`); omit it when the skill should be model-invocable.
@@ -23,6 +26,19 @@ on a budget model: `plugins/case-solvers/tests/model-guard.sh` runs `/case`, `/r
 `/orchestrate` on Haiku headless across multiple trials (including override-injection descriptions)
 and asserts each Model Guard stops it. It calls the real model, so it's slow and probabilistic — run
 it when changing any Model Guard.
+
+**Kimi Code breaks the per-plugin manifest pattern.** Its GitHub install reads the manifest at the
+*repository* root only, so instead of per-plugin `.kimi-plugin/` dirs there is a single root
+`kimi.plugin.json` declaring both `skills/` trees — both marketplace plugins ship to Kimi as one
+plugin named `case-solvers`. The manifest also ports the session-primer hook (`SessionStart` +
+`PreCompact`) via its `hooks` field, with `$KIMI_PLUGIN_ROOT` in place of `${CLAUDE_PLUGIN_ROOT}`.
+Two Kimi gaps are accepted and documented in the README: plugins can't ship subagent definitions —
+worked around, not solved: Kimi's agent loader reads the Claude-format `agents/*.md` verbatim
+(ignoring the `model:` pin), so users copy them into `~/.agents/agents/` and the reviewer pin keeps
+one frontier rung, the session's own model (the Kimi branch in `skills/evaluate/SKILL.md`'s
+*Reviewer pinning by host*) — and there
+is no implicit-invocation gate equivalent to Codex's `agents/openai.yaml`, so slash-only-ness on
+Kimi rests on skill prose.
 
 ## What this is
 
@@ -46,8 +62,9 @@ publish the same two plugins under `plugins/`:
   fixes live on the review tier while greenfield code stays `/solve`'s.
   `/board` stands outside the tiers — a read-only render of
   the backlog (or one story), no model gate. A skill recognizes its own tier from its system prompt
-  — by **model-ID substring**, not host, so the frontier list spans both hosts (Opus/Sonnet/Fable on
-  Claude, GPT-5-class on Codex) plus host-agnostic entries like Qwen3.8-Max-class. `/orchestrate` adds no fourth tier — it drives `/solve` and
+  — by **model-ID substring**, not host, so the frontier list spans all three hosts
+  (Opus/Sonnet/Fable on Claude, GPT-5-class on Codex, Kimi-K3-class on Kimi Code) plus
+  host-agnostic entries like Qwen3.8-Max-class. `/orchestrate` adds no fourth tier — it drives `/solve` and
   `/evaluate` across a whole epic's stories and stops at one pull request for the human to merge —
   but it requires a **planning model** too, the same gate `/case`/`/refine` carry, since it makes
   unsupervised judgment calls throughout the run (pre-flight go/no-go, stalled-story triage, the
@@ -65,7 +82,7 @@ publish the same two plugins under `plugins/`:
   stated roster-relative so it holds on both hosts — while interactive `--review` keeps the flat
   strongest-reviewer default (one story, human approving to trunk). On a custom frontier host there is
   one frontier rung, so both keys point at the session's own model and the rule degrades to a single
-  pin (see `shared/model-tiers.md`).
+  pin (see *Reviewer pinning by host* in `skills/evaluate/SKILL.md`).
 - **Invocation tracks blast radius, not read/write.** `/solve` (writes code) and `/evaluate`
   (merges + closes) are slash-only (`allow_implicit_invocation: false` in Codex agent metadata), so
   they never auto-fire mid-conversation. The rest are model-invocable so plain-English asks route to
@@ -88,8 +105,8 @@ publish the same two plugins under `plugins/`:
 
 - Bump the skill's frontmatter `version` and add a `CHANGELOG.md` entry in the same change. The
   marketplace/plugin `version` tracks the published plugin, not the per-skill frontmatter versions —
-  bump it in **all four** manifests (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and
-  both marketplaces) so the two hosts stay in lockstep.
+  bump it in **all five** manifests (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`,
+  both marketplaces, and the repo-root `kimi.plugin.json`) so the three hosts stay in lockstep.
 - `/case` and `/refine` share the contract rubrics in `plugins/case-solvers/shared/contract-rubrics.md`
   (Problem Types, Budget-Solver Fit, AC Quality Rubric, Pre-write Guard, Output Format). That file is
   the single source, but it is **not read at runtime**: everything below its `BEGIN SHARED` marker is
@@ -112,14 +129,20 @@ publish the same two plugins under `plugins/`:
     so it would fork the prose per host. Inlined text needs neither, which is why the skills carry no
     path-resolution instructions at all. Don't reintroduce a runtime read.
 - All five skills share the model-tier map in `plugins/case-solvers/shared/model-tiers.md` (Tier
-  classification — the budget/planning/unsure markers — and Reviewer pinning by host). Same pattern as
+  classification — the budget/planning/unsure markers). Same pattern as
   the contract rubrics: single source, **not read at runtime**, inlined verbatim into a `Model Tiers`
   section of every SKILL.md. Edit the map **there**, then run
   `plugins/case-solvers/tests/model-tiers-sync.sh --write`; never hand-edit a skill's generated block.
   The script with no flag verifies all five copies and fails on drift — pure text comparison, wired
   into CI like `rubrics-sync.sh`. Adding a model (or a host) is a one-file edit here, not five.
-  - **The reviewer-pin map keys off host *capability*, not a host list.** A native Claude/Codex host
-    uses the shipped reviewer agents (two-tier cost-keying + same-class step-up); a custom frontier
+  - **Reviewer pinning lives natively in `skills/evaluate/SKILL.md`** (moved there in 2.24.1 —
+    `/evaluate` is its sole consumer — so it is *not* part of the synced block) and keys off host
+    *capability*, not a host list. A native Claude/Codex host
+    uses the shipped reviewer agents (two-tier cost-keying + same-class step-up); a native Kimi Code
+    host can't receive shipped agents from a plugin, but loads the same `.md` files when the user
+    copies them into `~/.agents/agents/` — the `model:` pin is ignored there, so like a custom
+    frontier host it gets one rung, the session's own model ID (K3-class only; a budget session
+    stops); a custom frontier
     host (session model classifies as planning, e.g. `qwen3.8-max-preview`) pins a general subagent to
     the session's own model ID; anything else stops rather than falling back to a budget reviewer. New
     hosts fall into one of these buckets with no code change — don't reintroduce an enumerated

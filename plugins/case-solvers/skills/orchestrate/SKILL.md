@@ -1,7 +1,7 @@
 ---
 name: orchestrate
 description: "Automate the story-by-story /solve → review → land loop for one bd epic, with a single human gate at the end. Requires a planning model, the same gate /case and /refine carry — it makes unsupervised judgment calls throughout the run and never pauses for a live human response until the final PR. Creates/checks out epic/<id>, dispatches /solve --unattended one story at a time by default (--parallel opts into dispatching a whole ready wave concurrently), runs an unattended frontier review via /evaluate --review --unattended, lands each story through /evaluate --approve --unattended serialized on bd merge-slot, then opens one PR epic/<id> → <base> with one epic-level version bump + changelog entry. The one exception: if the shared epic branch's integrity can't be verified mid-run, it halts the whole run with an incident report rather than continuing. Nothing is final until that PR merges."
-version: 1.5.1
+version: 1.6.0
 argument-hint: '<epic-id> [--dry-run] [--parallel]'
 disable-model-invocation: false
 user-invocable: true
@@ -34,12 +34,14 @@ this" is not a reason to reclassify. Read the ID from the session environment / 
 states one, e.g. `The exact model ID is claude-haiku-4-5`).
 
 - **budget** — the ID carries a cheap/fast-tier marker: contains `haiku`, `flash`, `mini`, `lite`,
-  `small`, `nano`, or `luna`, or names a known budget tier (e.g. MiniMax-M-class, Gemini Flash-class,
-  `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`). **A budget marker outranks any planning marker below** —
-  a hypothetical `qwen3.8-max-lite` is budget, not planning.
+  `small`, `nano`, `luna`, or `kimi-k2`, or names a known budget tier (e.g. MiniMax-M-class, Gemini
+  Flash-class, `gpt-5-mini`/`gpt-5-nano`/`gpt-5.6-luna`, Kimi Code's `kimi-for-coding`). **A budget
+  marker outranks any planning marker below** — a hypothetical `qwen3.8-max-lite` is budget, not
+  planning.
 - **planning** — a known frontier tier: contains `opus`, `sonnet`, `fable`, or `mythos`, or a
   Gemini Pro-class / frontier GPT-5-class (e.g. `gpt-5.5`, `gpt-5.6-sol`, `gpt-5.6-terra`) /
-  Qwen3.8-Max-class (e.g. `qwen3.8-max-preview`) / equivalent high-tier model.
+  Qwen3.8-Max-class (e.g. `qwen3.8-max-preview`) / Kimi-K3-class (`k3`, `kimi-k3…`) / equivalent
+  high-tier model.
 - **unsure** — anything you cannot positively place in the planning list.
 
 `planning` is the frontier tier; `budget` and `unsure` are not. A skill that gates on a planning
