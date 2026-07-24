@@ -9,6 +9,66 @@ versions (shown in parentheses where relevant).
 
 ## [Unreleased]
 
+**Model Guard harnesses now assert the classification, and both directions.** All three
+`tests/{claude,codex,kimi}/model-guard.sh` gained (a) an assertion on the guard's mandatory first
+line, `model-guard: id=<exact-id> tier=<tier>`, via the new host-agnostic `guard_line` helper in
+`tests/lib.sh`, and (b) a **positive direction**: a planning model (`-M`, default
+`sonnet` / `gpt-5.6-sol` / `kimi-code/k3`) must classify `planning` and continue past the Model
+Guard. New flags: `-M`, `--budget-id`, `--planning-id`, `--only budget|planning`.
+
+Both were needed because a refusal-only harness cannot fail. A host that never states its model ID
+classifies `unsure`, and `unsure` refuses in the *same words* as `budget` — so a totally blind host
+scored a perfect pass. The positive set is `/refine` and `/orchestrate`, not `/case`: their
+Environment Guard stops on a missing `.beads/`, so a passing Model Guard is observable in an empty
+repo without authoring anything.
+
+**Three harness bugs surfaced while building this, two of which were why the old tests looked
+green.** Each is now fixed and commented in place so it is not reintroduced:
+
+- `REPO_ROOT` in `tests/lib.sh` resolved one level short of the repository root, so Kimi's
+  `sync_plugin` rsynced `plugins/` into the install root and left the real files untouched — every
+  Kimi trial ever run exercised the stale installed copy while the harness printed "synced".
+- The Claude harness read plain `claude -p`, which prints only the *final* assistant message. The
+  `model-guard:` line is that final message when the guard stops but an early turn when it passes,
+  so the harness saw it 9/9 on budget and 0/6 on planning and read a healthy guard as broken. It now
+  captures `--output-format stream-json --verbose` and asserts the guard line across the whole
+  stream, while refusal prose and `infra_error` are read from the final message only — matching stop
+  prose across the raw stream would hit the skill text the model read, and `infra_error`'s 429
+  pattern matched hex fragments of session UUIDs (`-429a`) and scored healthy trials inconclusive.
+- The planning direction briefly asserted that the refusal sentence was *absent* and false-failed on
+  Codex, whose transcript echoes the SKILL.md it read. It now asserts the guard line only.
+
+What the corrected assertions report, on real models — all three hosts green:
+
+- **Claude** — 9/9 budget, 4/4 planning. `sonnet` does emit `model-guard: id=claude-sonnet-5
+  tier=planning` and proceed; the earlier "deterministic 0/6" was the harness bug above, not a
+  guard or prose defect.
+- **Codex** — 2/2 planning, `gpt-5.6-sol` emits its slug and proceeds.
+- **Kimi** — 11/11 across both directions, after the hook below. It scored 2/9 before.
+
+**Kimi Code now gets a model identity, via `UserPromptSubmit`.** New hook
+`plugins/case-solvers/hooks/kimi-model-context.sh`, wired into `kimi.plugin.json`. Kimi is the one
+host that states no model ID anywhere the model can read: its system prompt names only "Kimi Code
+CLI", and no hook payload carries a `model` field (`SessionStart` gives
+`hook_event_name`/`session_id`/`cwd`/`source`). Models do not stop at `unsure` when the ID is
+missing — they guess. Observed before the fix: a budget `kimi-for-coding` session reasoning "Kimi
+Code CLI runs on k3, k3 is planning" and then authoring `.case.md` + `bd init`, and a k3 session
+adopting `default_model` out of `config.toml`.
+
+`UserPromptSubmit` is used because it is the only Kimi hook documented to append its output to
+context, and the only event whose payload carries the `session_id` the lookup needs. The ID is read
+from `modelAlias` in the session's own record under `$KIMI_CODE_HOME/sessions/*/<session_id>/`,
+last occurrence winning so an interactive `/model` switch is picked up. Two other sources were tried
+and are wrong, and the hook says so in place: the launching process's **argv**, because kimi
+overwrites its own argv with a bare `kimi-code` and erases `-m` (it survives only behind a wrapper
+like the harness's `timeout`); and **`default_model`**, which is the session's model only when the
+user did not override it — asserting it anyway measurably made things worse, taking the budget
+direction from 2/9 to 0/9 by telling a budget session it was frontier. The hook fails closed:
+silence leaves the session `unsure`, which the gated skills already handle by stopping.
+
+Plugin & marketplace entry `case-solvers` `2.25.1` → `2.25.2` (new shipped hook + manifest `hooks`
+entry). No skill prose, agent definition, or skill frontmatter version changed.
+
 **Added Codex Model Guard coverage and host-authenticated model identity.**
 `plugins/case-solvers/tests/codex/model-guard.sh` is now the third host twin: it runs `/case`,
 `/refine`, and `/orchestrate` through explicit `$case-solvers:<skill>` mentions on the budget
